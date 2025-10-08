@@ -4,7 +4,7 @@
   "description": "CLI tool to manage Claude Code MCP servers and memory files",
   "main": "dist/cli.js",
   "bin": {
-    "mcp-toggle": "./bin/mcp-toggle"
+    "mcp-toggle": "bin/mcp-toggle"
   },
   "scripts": {
     "build": "tsc",
@@ -27,7 +27,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/machjesusmoto/mcp-toggle.git"
+    "url": "git+https://github.com/machjesusmoto/mcp-toggle.git"
   },
   "bugs": {
     "url": "https://github.com/machjesusmoto/mcp-toggle/issues"
