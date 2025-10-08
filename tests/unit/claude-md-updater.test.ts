@@ -60,8 +60,8 @@ Some content here
   });
 
   describe('updateClaudeMd', () => {
-    it('should create new claude.md if it does not exist', async () => {
-      const claudeMdPath = path.join(tempDir, 'claude.md');
+    it('should create new CLAUDE.md if it does not exist', async () => {
+      const claudeMdPath = path.join(tempDir, 'CLAUDE.md');
 
       // Verify file doesn't exist
       expect(await fs.pathExists(claudeMdPath)).toBe(false);
@@ -83,8 +83,8 @@ Some content here
       expect(content).toContain('npx mcp-toggle');
     });
 
-    it('should append integration to existing claude.md', async () => {
-      const claudeMdPath = path.join(tempDir, 'claude.md');
+    it('should append integration to existing CLAUDE.md', async () => {
+      const claudeMdPath = path.join(tempDir, 'CLAUDE.md');
 
       const existingContent = `# My Project
 
@@ -119,7 +119,7 @@ Please follow these coding standards:
     });
 
     it('should be idempotent (no-op when integration already present)', async () => {
-      const claudeMdPath = path.join(tempDir, 'claude.md');
+      const claudeMdPath = path.join(tempDir, 'CLAUDE.md');
 
       // First update
       await updateClaudeMd(tempDir);
@@ -137,8 +137,8 @@ Please follow these coding standards:
       expect(markerCount).toBe(1);
     });
 
-    it('should handle empty existing claude.md', async () => {
-      const claudeMdPath = path.join(tempDir, 'claude.md');
+    it('should handle empty existing CLAUDE.md', async () => {
+      const claudeMdPath = path.join(tempDir, 'CLAUDE.md');
 
       // Create empty file
       await fs.writeFile(claudeMdPath, '', 'utf-8');
@@ -152,8 +152,8 @@ Please follow these coding standards:
       expect(hasIntegration(content)).toBe(true);
     });
 
-    it('should handle claude.md with only whitespace', async () => {
-      const claudeMdPath = path.join(tempDir, 'claude.md');
+    it('should handle CLAUDE.md with only whitespace', async () => {
+      const claudeMdPath = path.join(tempDir, 'CLAUDE.md');
 
       // Create file with only whitespace
       await fs.writeFile(claudeMdPath, '   \n\n  \n', 'utf-8');
@@ -167,7 +167,7 @@ Please follow these coding standards:
     });
 
     it('should set file permissions to 644', async () => {
-      const claudeMdPath = path.join(tempDir, 'claude.md');
+      const claudeMdPath = path.join(tempDir, 'CLAUDE.md');
 
       await updateClaudeMd(tempDir);
 
@@ -179,7 +179,7 @@ Please follow these coding standards:
     });
 
     it('should preserve blank lines between original content and integration', async () => {
-      const claudeMdPath = path.join(tempDir, 'claude.md');
+      const claudeMdPath = path.join(tempDir, 'CLAUDE.md');
 
       const existingContent = `# My Project
 
@@ -196,7 +196,7 @@ Some content here.`;
     });
 
     it('should handle special characters in existing content', async () => {
-      const claudeMdPath = path.join(tempDir, 'claude.md');
+      const claudeMdPath = path.join(tempDir, 'CLAUDE.md');
 
       const existingContent = `# Project with "quotes" and 'apostrophes'
 
@@ -224,7 +224,7 @@ Special chars: <>&"'
     });
 
     it('should handle existing HTML comments', async () => {
-      const claudeMdPath = path.join(tempDir, 'claude.md');
+      const claudeMdPath = path.join(tempDir, 'CLAUDE.md');
 
       const existingContent = `# My Project
 

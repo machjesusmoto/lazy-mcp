@@ -1,6 +1,6 @@
 /**
- * Integration test for claude.md integration workflow (User Story 3).
- * Tests the complete save + claude.md update workflow.
+ * Integration test for CLAUDE.md integration workflow (User Story 3).
+ * Tests the complete save + CLAUDE.md update workflow.
  */
 
 import * as path from 'path';
@@ -26,7 +26,7 @@ describe('Claude.md Integration Workflow (User Story 3)', () => {
     await cleanupTempDir(tempDir);
   });
 
-  it('should create claude.md on first save', async () => {
+  it('should create CLAUDE.md on first save', async () => {
     // Setup: Create project
     await createMockClaudeJson(tempDir, {
       filesystem: { command: 'node' },
@@ -44,8 +44,8 @@ describe('Claude.md Integration Workflow (User Story 3)', () => {
 
     await updateClaudeMd(tempDir);
 
-    // Assert: claude.md created
-    const claudeMdPath = path.join(tempDir, 'claude.md');
+    // Assert: CLAUDE.md created
+    const claudeMdPath = path.join(tempDir, 'CLAUDE.md');
     expect(await fs.pathExists(claudeMdPath)).toBe(true);
 
     const content = await fs.readFile(claudeMdPath, 'utf-8');
@@ -60,10 +60,10 @@ describe('Claude.md Integration Workflow (User Story 3)', () => {
     expect(content).toContain('npx mcp-toggle');
   });
 
-  it('should append integration to existing claude.md', async () => {
-    const claudeMdPath = path.join(tempDir, 'claude.md');
+  it('should append integration to existing CLAUDE.md', async () => {
+    const claudeMdPath = path.join(tempDir, 'CLAUDE.md');
 
-    // Setup: Create existing claude.md
+    // Setup: Create existing CLAUDE.md
     const existingContent = `# My Project
 
 This project uses Claude Code for development.
@@ -76,7 +76,7 @@ This project uses Claude Code for development.
 
     await fs.writeFile(claudeMdPath, existingContent, 'utf-8');
 
-    // Act: Update claude.md
+    // Act: Update CLAUDE.md
     await updateClaudeMd(tempDir);
 
     const updatedContent = await fs.readFile(claudeMdPath, 'utf-8');
@@ -96,7 +96,7 @@ This project uses Claude Code for development.
   });
 
   it('should be idempotent (no duplicate integration)', async () => {
-    const claudeMdPath = path.join(tempDir, 'claude.md');
+    const claudeMdPath = path.join(tempDir, 'CLAUDE.md');
 
     // Act: First update
     await updateClaudeMd(tempDir);
@@ -114,8 +114,8 @@ This project uses Claude Code for development.
     expect(markerCount).toBe(1);
   });
 
-  it('should preserve existing HTML comments in claude.md', async () => {
-    const claudeMdPath = path.join(tempDir, 'claude.md');
+  it('should preserve existing HTML comments in CLAUDE.md', async () => {
+    const claudeMdPath = path.join(tempDir, 'CLAUDE.md');
 
     const existingContent = `# Project
 
@@ -168,7 +168,7 @@ More content.
       },
     ]);
 
-    // Act: Update claude.md
+    // Act: Update CLAUDE.md
     await updateClaudeMd(tempDir);
 
     // Assert: blocked.md exists with correct content
@@ -177,8 +177,8 @@ More content.
     expect(blockedContent).toContain('mcp:filesystem');
     expect(blockedContent).toContain('memory:notes.md');
 
-    // Assert: claude.md exists with integration
-    const claudeMdPath = path.join(tempDir, 'claude.md');
+    // Assert: CLAUDE.md exists with integration
+    const claudeMdPath = path.join(tempDir, 'CLAUDE.md');
     const claudeContent = await fs.readFile(claudeMdPath, 'utf-8');
     expect(hasIntegration(claudeContent)).toBe(true);
 
@@ -229,8 +229,8 @@ More content.
     const fsServer = context.mcpServers.find((s) => s.name === 'filesystem');
     expect(fsServer?.isBlocked).toBe(true);
 
-    // Assert: claude.md has integration
-    const claudeMdPath = path.join(tempDir, 'claude.md');
+    // Assert: CLAUDE.md has integration
+    const claudeMdPath = path.join(tempDir, 'CLAUDE.md');
     const claudeContent = await fs.readFile(claudeMdPath, 'utf-8');
     expect(hasIntegration(claudeContent)).toBe(true);
   });
@@ -242,11 +242,11 @@ More content.
     // Act: Save empty blocked list
     await saveBlockedItems(tempDir, []);
 
-    // Act: Update claude.md
+    // Act: Update CLAUDE.md
     await updateClaudeMd(tempDir);
 
-    // Assert: claude.md created with integration
-    const claudeMdPath = path.join(tempDir, 'claude.md');
+    // Assert: CLAUDE.md created with integration
+    const claudeMdPath = path.join(tempDir, 'CLAUDE.md');
     expect(await fs.pathExists(claudeMdPath)).toBe(true);
 
     const content = await fs.readFile(claudeMdPath, 'utf-8');
@@ -256,14 +256,14 @@ More content.
   it('should preserve file permissions (644)', async () => {
     await updateClaudeMd(tempDir);
 
-    const claudeMdPath = path.join(tempDir, 'claude.md');
+    const claudeMdPath = path.join(tempDir, 'CLAUDE.md');
     const stats = await fs.stat(claudeMdPath);
 
     // 644 = owner read/write, group/others read
     expect((stats.mode & 0o644) === 0o644).toBe(true);
   });
 
-  it('should handle multiple save cycles with claude.md updates', async () => {
+  it('should handle multiple save cycles with CLAUDE.md updates', async () => {
     await createMockClaudeJson(tempDir, {
       server1: { command: 'cmd1' },
       server2: { command: 'cmd2' },
@@ -280,7 +280,7 @@ More content.
     ]);
     await updateClaudeMd(tempDir);
 
-    const claudeMdPath = path.join(tempDir, 'claude.md');
+    const claudeMdPath = path.join(tempDir, 'CLAUDE.md');
     const content1 = await fs.readFile(claudeMdPath, 'utf-8');
 
     // Cycle 2: Block server2 as well, update again
