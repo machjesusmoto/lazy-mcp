@@ -8,3 +8,4 @@ export * from './memory-file';
 export * from './config-source';
 export * from './blocked-item';
 export * from './project-context';
+export * from './types';
