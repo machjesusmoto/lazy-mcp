@@ -1,5 +1,9 @@
 # MCP Toggle
 
+[![npm version](https://img.shields.io/npm/v/mcp-toggle.svg)](https://www.npmjs.com/package/mcp-toggle)
+[![CI](https://github.com/machjesusmoto/mcp-toggle/actions/workflows/ci.yml/badge.svg)](https://github.com/machjesusmoto/mcp-toggle/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A command-line tool to manage Claude Code MCP servers and memory files.
 
 ## Overview
