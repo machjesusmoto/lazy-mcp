@@ -1,5 +1,5 @@
 /**
- * Updates claude.md with MCP toggle integration instructions.
+ * Updates CLAUDE.md with MCP toggle integration instructions.
  * Follows the claude-md-integration.md contract specification.
  */
 
@@ -27,7 +27,7 @@ const START_MARKER = '<!-- MCP Toggle Integration';
 const END_MARKER = '<!-- End MCP Toggle Integration -->';
 
 /**
- * Check if claude.md already has the integration block.
+ * Check if CLAUDE.md already has the integration block.
  */
 export function hasIntegration(content: string): boolean {
   return content.includes(START_MARKER) && content.includes(END_MARKER);
@@ -69,7 +69,7 @@ function addIntegration(existingContent: string): string {
 }
 
 /**
- * Update claude.md with integration instructions.
+ * Update CLAUDE.md with integration instructions.
  *
  * Behavior:
  * - If file doesn't exist: Creates new file with just the integration
@@ -85,7 +85,7 @@ export async function updateClaudeMd(projectDir: string): Promise<void> {
     throw new Error(`Project directory does not exist: ${projectDir}`);
   }
 
-  const claudeMdPath = path.join(projectDir, 'claude.md');
+  const claudeMdPath = path.join(projectDir, 'CLAUDE.md');
 
   // Read existing content (if file exists)
   let existingContent = '';
