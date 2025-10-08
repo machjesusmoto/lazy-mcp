@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "node",
+      "args": ["./servers/fs.js"],
+      "env": {"ROOT": "/home/test"}
+    },
+    "database": {
+      "command": "python",
+      "args": ["-m", "db_server"],
+      "env": {"DB_PATH": "./data.db"}
+    },
+    "api": {
+      "command": "npx",
+      "args": ["-y", "@custom/api-server"]
+    }
+  }
+}
