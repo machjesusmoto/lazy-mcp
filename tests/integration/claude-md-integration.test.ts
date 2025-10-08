@@ -280,8 +280,8 @@ More content.
     ]);
     await updateClaudeMd(tempDir);
 
-    let claudeMdPath = path.join(tempDir, 'claude.md');
-    let content1 = await fs.readFile(claudeMdPath, 'utf-8');
+    const claudeMdPath = path.join(tempDir, 'claude.md');
+    const content1 = await fs.readFile(claudeMdPath, 'utf-8');
 
     // Cycle 2: Block server2 as well, update again
     await saveBlockedItems(tempDir, [
@@ -300,13 +300,13 @@ More content.
     ]);
     await updateClaudeMd(tempDir);
 
-    let content2 = await fs.readFile(claudeMdPath, 'utf-8');
+    const content2 = await fs.readFile(claudeMdPath, 'utf-8');
 
     // Cycle 3: Unblock all, update again
     await saveBlockedItems(tempDir, []);
     await updateClaudeMd(tempDir);
 
-    let content3 = await fs.readFile(claudeMdPath, 'utf-8');
+    const content3 = await fs.readFile(claudeMdPath, 'utf-8');
 
     // Assert: Integration present in all cycles
     expect(hasIntegration(content1)).toBe(true);

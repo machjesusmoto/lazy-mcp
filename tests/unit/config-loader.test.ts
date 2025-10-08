@@ -1,6 +1,7 @@
 import { loadMCPServers } from '../../src/core/config-loader';
 import { createTempDir, cleanupTempDir, createMockClaudeJson } from '../helpers/test-utils';
 import * as path from 'path';
+import * as fs from 'fs-extra';
 
 describe('config-loader', () => {
   let tempDir: string;
@@ -87,7 +88,6 @@ describe('config-loader', () => {
     });
 
     it('should handle invalid JSON gracefully', async () => {
-      const fs = require('fs-extra');
       const invalidPath = path.join(tempDir, '.claude.json');
       await fs.writeFile(invalidPath, '{invalid json}', 'utf-8');
 
@@ -105,7 +105,6 @@ describe('config-loader', () => {
     });
 
     it('should handle missing mcpServers key', async () => {
-      const fs = require('fs-extra');
       await fs.writeFile(path.join(tempDir, '.claude.json'), '{"other": "data"}', 'utf-8');
 
       const servers = await loadMCPServers(tempDir);

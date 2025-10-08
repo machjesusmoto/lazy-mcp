@@ -1,7 +1,6 @@
 import { buildProjectContext } from '../../src/core/project-context-builder';
 import { computeStats } from '../../src/models/project-context';
 import { createTempDir, cleanupTempDir, createMockClaudeJson, createMockMemoryFiles, createMockBlockedMd } from '../helpers/test-utils';
-import * as path from 'path';
 
 describe('project-context-builder', () => {
   let tempDir: string;
