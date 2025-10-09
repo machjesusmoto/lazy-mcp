@@ -10,8 +10,8 @@ import {
   blockLocalServer,
   unblockLocalServer,
 } from '../../src/core/blocked-manager';
-import { readClaudeJson, writeClaudeJson } from '../../src/utils/claude-json-utils';
-import type { ClaudeJsonConfig } from '../../src/models/types';
+import { readMcpJson, writeMcpJson } from '../../src/utils/mcp-json-utils';
+import type { McpJsonConfig } from '../../src/models/types';
 
 describe('blocked-manager v2.0.0', () => {
   let testDir: string;
@@ -26,38 +26,38 @@ describe('blocked-manager v2.0.0', () => {
   });
 
   describe('blockLocalServer (US1)', () => {
-    it('should remove local server from .claude.json', async () => {
-      const config: ClaudeJsonConfig = {
+    it('should remove local server from .mcp.json', async () => {
+      const config: McpJsonConfig = {
         mcpServers: {
           'local-server': { command: 'node', args: ['server.js'] },
         },
       };
-      await writeClaudeJson(testDir, config);
+      await writeMcpJson(testDir, config);
 
       await blockLocalServer(testDir, 'local-server');
 
-      const result = await readClaudeJson(testDir);
+      const result = await readMcpJson(testDir);
       expect(result.mcpServers['local-server']).toBeUndefined();
     });
 
     it('should preserve other servers', async () => {
-      const config: ClaudeJsonConfig = {
+      const config: McpJsonConfig = {
         mcpServers: {
           's1': { command: 'node' },
           's2': { command: 'node' },
         },
       };
-      await writeClaudeJson(testDir, config);
+      await writeMcpJson(testDir, config);
 
       await blockLocalServer(testDir, 's1');
 
-      const result = await readClaudeJson(testDir);
+      const result = await readMcpJson(testDir);
       expect(result.mcpServers['s1']).toBeUndefined();
       expect(result.mcpServers['s2']).toBeDefined();
     });
 
     it('should throw error if server not found', async () => {
-      await writeClaudeJson(testDir, { mcpServers: {} });
+      await writeMcpJson(testDir, { mcpServers: {} });
       await expect(blockLocalServer(testDir, 'missing')).rejects.toThrow('not found');
     });
   });

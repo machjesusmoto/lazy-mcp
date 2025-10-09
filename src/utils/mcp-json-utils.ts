@@ -1,5 +1,5 @@
 /**
- * Utilities for reading, writing, and manipulating .claude.json files.
+ * Utilities for reading, writing, and manipulating .mcp.json files.
  * Implements Phase 2 (Foundation) of the v2.0.0 architectural redesign.
  * Core utilities for atomic writes with backup/restore for zero-corruption guarantee.
  */
@@ -7,21 +7,21 @@
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import type {
-  ClaudeJsonConfig,
+  McpJsonConfig,
   MCPServerConfig,
   BlockedMCPServerConfig,
 } from '../models/types';
 
 /**
- * Read .claude.json from a directory.
+ * Read .mcp.json from a directory.
  * Returns empty config if file doesn't exist.
  *
- * @param projectDir - Directory containing .claude.json
- * @returns Parsed .claude.json configuration
+ * @param projectDir - Directory containing .mcp.json
+ * @returns Parsed .mcp.json configuration
  * @throws Error if file exists but is malformed
  */
-export async function readClaudeJson(projectDir: string): Promise<ClaudeJsonConfig> {
-  const configPath = path.join(projectDir, '.claude.json');
+export async function readMcpJson(projectDir: string): Promise<McpJsonConfig> {
+  const configPath = path.join(projectDir, '.mcp.json');
 
   if (!(await fs.pathExists(configPath))) {
     return { mcpServers: {} };
@@ -29,7 +29,7 @@ export async function readClaudeJson(projectDir: string): Promise<ClaudeJsonConf
 
   try {
     const content = await fs.readFile(configPath, 'utf-8');
-    const config = JSON.parse(content) as ClaudeJsonConfig;
+    const config = JSON.parse(content) as McpJsonConfig;
 
     // Ensure mcpServers object exists
     if (!config.mcpServers) {
@@ -39,24 +39,24 @@ export async function readClaudeJson(projectDir: string): Promise<ClaudeJsonConf
     return config;
   } catch (error) {
     throw new Error(
-      `Failed to read .claude.json from ${projectDir}: ${error instanceof Error ? error.message : 'Unknown error'}`
+      `Failed to read .mcp.json from ${projectDir}: ${error instanceof Error ? error.message : 'Unknown error'}`
     );
   }
 }
 
 /**
- * Write .claude.json to a directory atomically.
+ * Write .mcp.json to a directory atomically.
  * Creates backup before writing and restores on failure.
  *
- * @param projectDir - Directory to write .claude.json to
+ * @param projectDir - Directory to write .mcp.json to
  * @param config - Configuration to write
  * @throws Error if write fails
  */
-export async function writeClaudeJson(
+export async function writeMcpJson(
   projectDir: string,
-  config: ClaudeJsonConfig
+  config: McpJsonConfig
 ): Promise<void> {
-  const configPath = path.join(projectDir, '.claude.json');
+  const configPath = path.join(projectDir, '.mcp.json');
   const backupPath = `${configPath}.backup`;
   const tempPath = `${configPath}.tmp`;
 
@@ -88,7 +88,7 @@ export async function writeClaudeJson(
     await fs.remove(tempPath).catch(() => {});
 
     throw new Error(
-      `Failed to write .claude.json to ${projectDir}: ${error instanceof Error ? error.message : 'Unknown error'}`
+      `Failed to write .mcp.json to ${projectDir}: ${error instanceof Error ? error.message : 'Unknown error'}`
     );
   }
 }
@@ -174,23 +174,23 @@ export async function ensureClaudeDirectory(projectDir: string): Promise<void> {
 }
 
 /**
- * Check if .claude.json exists in a directory.
+ * Check if .mcp.json exists in a directory.
  *
  * @param projectDir - Directory to check
- * @returns True if .claude.json exists
+ * @returns True if .mcp.json exists
  */
-export async function claudeJsonExists(projectDir: string): Promise<boolean> {
-  const configPath = path.join(projectDir, '.claude.json');
+export async function mcpJsonExists(projectDir: string): Promise<boolean> {
+  const configPath = path.join(projectDir, '.mcp.json');
   return fs.pathExists(configPath);
 }
 
 /**
- * Create a minimal .claude.json if it doesn't exist.
+ * Create a minimal .mcp.json if it doesn't exist.
  *
- * @param projectDir - Directory to create .claude.json in
+ * @param projectDir - Directory to create .mcp.json in
  */
-export async function ensureClaudeJson(projectDir: string): Promise<void> {
-  if (!(await claudeJsonExists(projectDir))) {
-    await writeClaudeJson(projectDir, { mcpServers: {} });
+export async function ensureMcpJson(projectDir: string): Promise<void> {
+  if (!(await mcpJsonExists(projectDir))) {
+    await writeMcpJson(projectDir, { mcpServers: {} });
   }
 }

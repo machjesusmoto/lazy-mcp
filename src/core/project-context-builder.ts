@@ -8,8 +8,9 @@ import * as fs from 'fs-extra';
 import { ProjectContext, ConfigSource } from '../models';
 import { loadMCPServers } from './config-loader';
 import { loadMemoryFiles } from './memory-loader';
-import { loadBlockedItems } from './blocked-manager';
 import { getHierarchyLevel } from '../utils/path-utils';
+import { isBlockedServer } from '../utils/mcp-json-utils';
+import type { BlockedItemSummary } from '../models/types';
 
 /**
  * Build complete project context by loading and aggregating all data.
@@ -36,58 +37,58 @@ export async function buildProjectContext(projectDir: string): Promise<ProjectCo
   }
 
   // Load all data sources in parallel
-  const [mcpServers, memoryFiles, blockedItems] = await Promise.all([
+  const [mcpServers, memoryFiles] = await Promise.all([
     loadMCPServers(projectDir),
     loadMemoryFiles(projectDir),
-    loadBlockedItems(projectDir),
   ]);
 
   if (debug) {
-    console.error(`[DEBUG] Loaded ${mcpServers.length} MCP servers, ${memoryFiles.length} memory files, ${blockedItems.length} blocked items`);
+    console.error(`[DEBUG] Loaded ${mcpServers.length} MCP servers, ${memoryFiles.length} memory files`);
   }
 
-  // Create lookup maps for blocked items
-  const blockedServerNames = new Set<string>();
-  const blockedMemoryPaths = new Set<string>();
-
-  for (const item of blockedItems) {
-    if (item.type === 'mcp') {
-      blockedServerNames.add(item.identifier);
-    } else if (item.type === 'memory') {
-      blockedMemoryPaths.add(item.identifier);
-    }
-  }
-
-  // Apply blocked state to servers
+  // In v2.0.0, blocked state is detected directly from .mcp.json and .md.blocked files
+  // Apply blocked state to servers by checking for dummy echo overrides
   for (const server of mcpServers) {
-    if (blockedServerNames.has(server.name)) {
+    // Check if server has blocking metadata (command="echo" with _mcpToggleBlocked)
+    const serverAsAny = server as any;
+    if (server.command === 'echo' && serverAsAny._mcpToggleBlocked === true) {
       server.isBlocked = true;
-      const blockedItem = blockedItems.find(
-        (item) => item.type === 'mcp' && item.identifier === server.name
-      );
-      if (blockedItem) {
-        server.blockedAt = blockedItem.blockedAt;
+      // Extract blockedAt from metadata if available
+      if (serverAsAny._mcpToggleBlockedAt) {
+        try {
+          server.blockedAt = new Date(serverAsAny._mcpToggleBlockedAt);
+        } catch {
+          // Invalid date, use current time
+          server.blockedAt = new Date();
+        }
       }
     }
   }
 
-  // Apply blocked state to memory files
-  for (const file of memoryFiles) {
-    // Check both name and relativePath for matches
-    if (blockedMemoryPaths.has(file.name) || blockedMemoryPaths.has(file.relativePath)) {
-      file.isBlocked = true;
-      const blockedItem = blockedItems.find(
-        (item) =>
-          item.type === 'memory' &&
-          (item.identifier === file.name || item.identifier === file.relativePath)
-      );
-      if (blockedItem) {
-        file.blockedAt = blockedItem.blockedAt;
-      }
-    }
-  }
+  // Memory files are already marked as blocked by loadMemoryFiles
+  // (files with .md.blocked extension are detected during loading)
 
-  // Build config sources list (unique .claude.json paths)
+  // Build blockedItems summary list for backward compatibility with ProjectContext
+  const blockedItems: BlockedItemSummary[] = [
+    ...mcpServers
+      .filter(s => s.isBlocked)
+      .map(s => ({
+        type: 'mcp' as const,
+        identifier: s.name,
+        blockedAt: s.blockedAt || new Date(),
+        blockedBy: 'mcp-toggle',
+      })),
+    ...memoryFiles
+      .filter(f => f.isBlocked)
+      .map(f => ({
+        type: 'memory' as const,
+        identifier: f.relativePath || f.name,
+        blockedAt: f.blockedAt || new Date(),
+        blockedBy: 'mcp-toggle',
+      })),
+  ];
+
+  // Build config sources list (unique .mcp.json paths)
   const configSourcePaths = new Set<string>();
   for (const server of mcpServers) {
     configSourcePaths.add(server.sourcePath);
@@ -95,7 +96,7 @@ export async function buildProjectContext(projectDir: string): Promise<ProjectCo
 
   const configSources: ConfigSource[] = await Promise.all(
     Array.from(configSourcePaths).map(async (sourcePath) => {
-      const configPath = path.join(sourcePath, '.claude.json');
+      const configPath = path.join(sourcePath, '.mcp.json');
       const hierarchyLevel = getHierarchyLevel(projectDir, sourcePath);
 
       let exists = false;
