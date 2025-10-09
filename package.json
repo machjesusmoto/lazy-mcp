@@ -1,6 +1,6 @@
 {
   "name": "mcp-toggle",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "CLI tool to manage Claude Code MCP servers and memory files",
   "main": "dist/cli.js",
   "bin": {
