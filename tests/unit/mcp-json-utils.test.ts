@@ -1,5 +1,5 @@
 /**
- * Tests for claude-json-utils.ts
+ * Tests for mcp-json-utils.ts
  * Phase 2 (Foundation) - Core utilities testing
  */
 
@@ -7,23 +7,23 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 import { tmpdir } from 'os';
 import {
-  readClaudeJson,
-  writeClaudeJson,
+  readMcpJson,
+  writeMcpJson,
   isBlockedServer,
   createDummyOverride,
   extractOriginalConfig,
   removeBlockingMetadata,
   ensureClaudeDirectory,
-  claudeJsonExists,
-  ensureClaudeJson,
-} from '../../src/utils/claude-json-utils';
+  mcpJsonExists,
+  ensureMcpJson,
+} from '../../src/utils/mcp-json-utils';
 import type {
-  ClaudeJsonConfig,
+  McpJsonConfig,
   MCPServerConfig,
   BlockedMCPServerConfig,
 } from '../../src/models/types';
 
-describe('claude-json-utils', () => {
+describe('mcp-json-utils', () => {
   let testDir: string;
 
   beforeEach(async () => {
@@ -37,14 +37,14 @@ describe('claude-json-utils', () => {
     await fs.remove(testDir);
   });
 
-  describe('readClaudeJson', () => {
-    it('should return empty config when .claude.json does not exist', async () => {
-      const config = await readClaudeJson(testDir);
+  describe('readMcpJson', () => {
+    it('should return empty config when .mcp.json does not exist', async () => {
+      const config = await readMcpJson(testDir);
       expect(config).toEqual({ mcpServers: {} });
     });
 
-    it('should read valid .claude.json file', async () => {
-      const testConfig: ClaudeJsonConfig = {
+    it('should read valid .mcp.json file', async () => {
+      const testConfig: McpJsonConfig = {
         mcpServers: {
           'test-server': {
             command: 'npx',
@@ -54,34 +54,34 @@ describe('claude-json-utils', () => {
       };
 
       await fs.writeFile(
-        path.join(testDir, '.claude.json'),
+        path.join(testDir, '.mcp.json'),
         JSON.stringify(testConfig, null, 2),
         'utf-8'
       );
 
-      const config = await readClaudeJson(testDir);
+      const config = await readMcpJson(testDir);
       expect(config).toEqual(testConfig);
     });
 
     it('should ensure mcpServers object exists even if missing from file', async () => {
       await fs.writeFile(
-        path.join(testDir, '.claude.json'),
+        path.join(testDir, '.mcp.json'),
         JSON.stringify({}),
         'utf-8'
       );
 
-      const config = await readClaudeJson(testDir);
+      const config = await readMcpJson(testDir);
       expect(config.mcpServers).toEqual({});
     });
 
     it('should throw error for malformed JSON', async () => {
       await fs.writeFile(
-        path.join(testDir, '.claude.json'),
+        path.join(testDir, '.mcp.json'),
         'invalid json {',
         'utf-8'
       );
 
-      await expect(readClaudeJson(testDir)).rejects.toThrow();
+      await expect(readMcpJson(testDir)).rejects.toThrow();
     });
 
     it('should preserve additional properties', async () => {
@@ -91,19 +91,19 @@ describe('claude-json-utils', () => {
       };
 
       await fs.writeFile(
-        path.join(testDir, '.claude.json'),
+        path.join(testDir, '.mcp.json'),
         JSON.stringify(testConfig, null, 2),
         'utf-8'
       );
 
-      const config = await readClaudeJson(testDir);
+      const config = await readMcpJson(testDir);
       expect(config.customProperty).toBe('test-value');
     });
   });
 
-  describe('writeClaudeJson', () => {
-    it('should write .claude.json with proper formatting', async () => {
-      const testConfig: ClaudeJsonConfig = {
+  describe('writeMcpJson', () => {
+    it('should write .mcp.json with proper formatting', async () => {
+      const testConfig: McpJsonConfig = {
         mcpServers: {
           'test-server': {
             command: 'node',
@@ -112,9 +112,9 @@ describe('claude-json-utils', () => {
         },
       };
 
-      await writeClaudeJson(testDir, testConfig);
+      await writeMcpJson(testDir, testConfig);
 
-      const content = await fs.readFile(path.join(testDir, '.claude.json'), 'utf-8');
+      const content = await fs.readFile(path.join(testDir, '.mcp.json'), 'utf-8');
       const parsed = JSON.parse(content);
       expect(parsed).toEqual(testConfig);
       expect(content).toMatch(/^\{/); // Starts with {
@@ -122,31 +122,31 @@ describe('claude-json-utils', () => {
     });
 
     it('should set correct file permissions (644)', async () => {
-      const testConfig: ClaudeJsonConfig = { mcpServers: {} };
-      await writeClaudeJson(testDir, testConfig);
+      const testConfig: McpJsonConfig = { mcpServers: {} };
+      await writeMcpJson(testDir, testConfig);
 
-      const stats = await fs.stat(path.join(testDir, '.claude.json'));
+      const stats = await fs.stat(path.join(testDir, '.mcp.json'));
       const mode = stats.mode & parseInt('777', 8);
       expect(mode).toBe(parseInt('644', 8));
     });
 
     it('should create backup before writing', async () => {
-      const originalConfig: ClaudeJsonConfig = {
+      const originalConfig: McpJsonConfig = {
         mcpServers: { 'server-1': { command: 'node', args: ['old.js'] } },
       };
-      await writeClaudeJson(testDir, originalConfig);
+      await writeMcpJson(testDir, originalConfig);
 
-      const newConfig: ClaudeJsonConfig = {
+      const newConfig: McpJsonConfig = {
         mcpServers: { 'server-2': { command: 'node', args: ['new.js'] } },
       };
-      await writeClaudeJson(testDir, newConfig);
+      await writeMcpJson(testDir, newConfig);
 
       // Backup should be removed on success
-      const backupExists = await fs.pathExists(path.join(testDir, '.claude.json.backup'));
+      const backupExists = await fs.pathExists(path.join(testDir, '.mcp.json.backup'));
       expect(backupExists).toBe(false);
 
       // New config should be written
-      const config = await readClaudeJson(testDir);
+      const config = await readMcpJson(testDir);
       expect(config).toEqual(newConfig);
     });
   });
@@ -310,39 +310,39 @@ describe('claude-json-utils', () => {
     });
   });
 
-  describe('claudeJsonExists', () => {
-    it('should return true when .claude.json exists', async () => {
-      await fs.writeFile(path.join(testDir, '.claude.json'), '{}', 'utf-8');
+  describe('mcpJsonExists', () => {
+    it('should return true when .mcp.json exists', async () => {
+      await fs.writeFile(path.join(testDir, '.mcp.json'), '{}', 'utf-8');
 
-      const exists = await claudeJsonExists(testDir);
+      const exists = await mcpJsonExists(testDir);
       expect(exists).toBe(true);
     });
 
-    it('should return false when .claude.json does not exist', async () => {
-      const exists = await claudeJsonExists(testDir);
+    it('should return false when .mcp.json does not exist', async () => {
+      const exists = await mcpJsonExists(testDir);
       expect(exists).toBe(false);
     });
   });
 
-  describe('ensureClaudeJson', () => {
-    it('should create minimal .claude.json if it does not exist', async () => {
-      await ensureClaudeJson(testDir);
+  describe('ensureMcpJson', () => {
+    it('should create minimal .mcp.json if it does not exist', async () => {
+      await ensureMcpJson(testDir);
 
-      const config = await readClaudeJson(testDir);
+      const config = await readMcpJson(testDir);
       expect(config).toEqual({ mcpServers: {} });
     });
 
-    it('should not overwrite existing .claude.json', async () => {
-      const existingConfig: ClaudeJsonConfig = {
+    it('should not overwrite existing .mcp.json', async () => {
+      const existingConfig: McpJsonConfig = {
         mcpServers: {
           'existing-server': { command: 'node', args: ['server.js'] },
         },
       };
-      await writeClaudeJson(testDir, existingConfig);
+      await writeMcpJson(testDir, existingConfig);
 
-      await ensureClaudeJson(testDir);
+      await ensureMcpJson(testDir);
 
-      const config = await readClaudeJson(testDir);
+      const config = await readMcpJson(testDir);
       expect(config).toEqual(existingConfig);
     });
   });

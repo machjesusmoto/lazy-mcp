@@ -78,7 +78,7 @@ export const MemoryList: React.FC<MemoryListProps> = ({
               {' '}
               {file.isSymlink && <Text dimColor>→ symlink </Text>}
               <Text dimColor italic>
-                [{file.sourceType === 'local' ? 'local' : 'inherited'}]
+                [{file.hierarchyLevel === 0 ? 'project' : 'global'}]
               </Text>
             </Text>
           </Box>

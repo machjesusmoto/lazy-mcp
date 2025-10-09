@@ -19,17 +19,40 @@ export async function cleanupTempDir(dirPath: string): Promise<void> {
 }
 
 /**
+ * Creates a mock .mcp.json file with specified MCP servers.
+ */
+export async function createMockMcpJson(
+  dirPath: string,
+  servers: Record<string, unknown>
+): Promise<string> {
+  await fs.ensureDir(dirPath);
+  const filePath = path.join(dirPath, '.mcp.json');
+  const content = JSON.stringify({ mcpServers: servers }, null, 2);
+  await fs.writeFile(filePath, content, 'utf-8');
+  return filePath;
+}
+
+/**
+ * @deprecated Legacy function for backward compatibility. Use createMockMcpJson instead.
  * Creates a mock .claude.json file with specified MCP servers.
  */
 export async function createMockClaudeJson(
   dirPath: string,
   servers: Record<string, unknown>
 ): Promise<string> {
-  await fs.ensureDir(dirPath);
-  const filePath = path.join(dirPath, '.claude.json');
-  const content = JSON.stringify({ mcpServers: servers }, null, 2);
-  await fs.writeFile(filePath, content, 'utf-8');
-  return filePath;
+  return createMockMcpJson(dirPath, servers);
+}
+
+/**
+ * Checks if a file exists.
+ */
+export async function fileExists(filePath: string): Promise<boolean> {
+  try {
+    await fs.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -54,6 +77,59 @@ export async function createMockMemoryFiles(
 }
 
 /**
+ * Creates blocked MCP servers using v2.0.0 mechanism (dummy echo overrides in .mcp.json).
+ * This creates blocking overrides with _mcpToggleBlocked metadata.
+ */
+export async function createBlockedServers(
+  dirPath: string,
+  serverNames: string[]
+): Promise<void> {
+  const mcpJsonPath = path.join(dirPath, '.mcp.json');
+
+  // Read existing config or create new one
+  let config: Record<string, unknown> = { mcpServers: {} };
+  if (await fileExists(mcpJsonPath)) {
+    const content = await fs.readFile(mcpJsonPath, 'utf-8');
+    config = JSON.parse(content);
+  }
+
+  const mcpServers = config.mcpServers as Record<string, unknown>;
+
+  // Add dummy echo overrides for blocked servers
+  for (const serverName of serverNames) {
+    mcpServers[serverName] = {
+      command: 'echo',
+      args: [`[mcp-toggle] Server '${serverName}' is blocked`],
+      _mcpToggleBlocked: true,
+      _mcpToggleBlockedAt: new Date().toISOString(),
+      _mcpToggleOriginal: {
+        command: 'node',
+        args: ['./dummy.js'],
+      },
+    };
+  }
+
+  await fs.writeFile(mcpJsonPath, JSON.stringify(config, null, 2), 'utf-8');
+}
+
+/**
+ * Creates blocked memory files using v2.0.0 mechanism (.md.blocked extension).
+ */
+export async function createBlockedMemoryFiles(
+  dirPath: string,
+  filenames: string[]
+): Promise<void> {
+  const memoriesDir = path.join(dirPath, '.claude', 'memories');
+  await fs.ensureDir(memoriesDir);
+
+  for (const filename of filenames) {
+    const blockedPath = path.join(memoriesDir, `${filename}.blocked`);
+    await fs.writeFile(blockedPath, '# Blocked memory file', 'utf-8');
+  }
+}
+
+/**
+ * @deprecated Legacy v1.x function. Use createBlockedServers and createBlockedMemoryFiles instead.
  * Creates a mock blocked.md file.
  */
 export async function createMockBlockedMd(
@@ -92,16 +168,4 @@ export async function createMockBlockedMd(
  */
 export async function readFile(filePath: string): Promise<string> {
   return await fs.readFile(filePath, 'utf-8');
-}
-
-/**
- * Checks if a file exists.
- */
-export async function fileExists(filePath: string): Promise<boolean> {
-  try {
-    await fs.access(filePath);
-    return true;
-  } catch {
-    return false;
-  }
 }

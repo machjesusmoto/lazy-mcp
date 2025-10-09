@@ -6,8 +6,8 @@
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import { tmpdir } from 'os';
-import { writeClaudeJson, readClaudeJson } from '../../src/utils/claude-json-utils';
-import type { ClaudeJsonConfig } from '../../src/models/types';
+import { writeMcpJson, readMcpJson } from '../../src/utils/mcp-json-utils';
+import type { McpJsonConfig } from '../../src/models/types';
 
 describe('Atomic Write Pattern', () => {
   let testDir: string;
@@ -23,17 +23,17 @@ describe('Atomic Write Pattern', () => {
 
   describe('Write-to-Temp + Atomic-Move Pattern', () => {
     it('should write to temp file before moving to final location', async () => {
-      const configPath = path.join(testDir, '.claude.json');
+      const configPath = path.join(testDir, '.mcp.json');
       const tempPath = `${configPath}.tmp`;
 
-      const testConfig: ClaudeJsonConfig = {
+      const testConfig: McpJsonConfig = {
         mcpServers: {
           'test-server': { command: 'node', args: ['server.js'] },
         },
       };
 
       // Spy on fs operations by checking temp file doesn't exist after completion
-      await writeClaudeJson(testDir, testConfig);
+      await writeMcpJson(testDir, testConfig);
 
       // Temp file should be cleaned up
       const tempExists = await fs.pathExists(tempPath);
@@ -45,46 +45,46 @@ describe('Atomic Write Pattern', () => {
     });
 
     it('should be atomic - file either fully written or not at all', async () => {
-      const testConfig: ClaudeJsonConfig = {
+      const testConfig: McpJsonConfig = {
         mcpServers: {
           'server-1': { command: 'node', args: ['test.js'] },
         },
       };
 
-      await writeClaudeJson(testDir, testConfig);
+      await writeMcpJson(testDir, testConfig);
 
       // Read back and verify complete
-      const config = await readClaudeJson(testDir);
+      const config = await readMcpJson(testDir);
       expect(config).toEqual(testConfig);
 
       // File should be valid JSON (no partial writes)
-      const content = await fs.readFile(path.join(testDir, '.claude.json'), 'utf-8');
+      const content = await fs.readFile(path.join(testDir, '.mcp.json'), 'utf-8');
       expect(() => JSON.parse(content)).not.toThrow();
     });
   });
 
   describe('Backup Creation', () => {
     it('should create backup before overwriting existing file', async () => {
-      const configPath = path.join(testDir, '.claude.json');
+      const configPath = path.join(testDir, '.mcp.json');
       const backupPath = `${configPath}.backup`;
 
       // Write original config
-      const originalConfig: ClaudeJsonConfig = {
+      const originalConfig: McpJsonConfig = {
         mcpServers: {
           'original-server': { command: 'node', args: ['original.js'] },
         },
       };
-      await writeClaudeJson(testDir, originalConfig);
+      await writeMcpJson(testDir, originalConfig);
 
       // Simulate a write that might fail by checking backup exists during write
       // (In real scenario, backup is removed on success)
-      const newConfig: ClaudeJsonConfig = {
+      const newConfig: McpJsonConfig = {
         mcpServers: {
           'new-server': { command: 'node', args: ['new.js'] },
         },
       };
 
-      await writeClaudeJson(testDir, newConfig);
+      await writeMcpJson(testDir, newConfig);
 
       // Backup should be removed after successful write
       const backupExists = await fs.pathExists(backupPath);
@@ -92,11 +92,11 @@ describe('Atomic Write Pattern', () => {
     });
 
     it('should not create backup when writing to new directory', async () => {
-      const configPath = path.join(testDir, '.claude.json');
+      const configPath = path.join(testDir, '.mcp.json');
       const backupPath = `${configPath}.backup`;
 
-      const testConfig: ClaudeJsonConfig = { mcpServers: {} };
-      await writeClaudeJson(testDir, testConfig);
+      const testConfig: McpJsonConfig = { mcpServers: {} };
+      await writeMcpJson(testDir, testConfig);
 
       const backupExists = await fs.pathExists(backupPath);
       expect(backupExists).toBe(false);
@@ -105,27 +105,27 @@ describe('Atomic Write Pattern', () => {
 
   describe('Restore on Failure', () => {
     it('should restore from backup if write fails', async () => {
-      const configPath = path.join(testDir, '.claude.json');
+      const configPath = path.join(testDir, '.mcp.json');
 
       // Write original config
-      const originalConfig: ClaudeJsonConfig = {
+      const originalConfig: McpJsonConfig = {
         mcpServers: {
           'original-server': { command: 'node', args: ['original.js'] },
         },
       };
-      await writeClaudeJson(testDir, originalConfig);
+      await writeMcpJson(testDir, originalConfig);
 
       // Make directory read-only to simulate write failure
       await fs.chmod(testDir, 0o444);
 
-      const newConfig: ClaudeJsonConfig = {
+      const newConfig: McpJsonConfig = {
         mcpServers: {
           'new-server': { command: 'node', args: ['new.js'] },
         },
       };
 
       try {
-        await writeClaudeJson(testDir, newConfig);
+        await writeMcpJson(testDir, newConfig);
       } catch (error) {
         // Expected to fail
       }
@@ -134,23 +134,23 @@ describe('Atomic Write Pattern', () => {
       await fs.chmod(testDir, 0o755);
 
       // Original config should still be intact
-      const config = await readClaudeJson(testDir);
+      const config = await readMcpJson(testDir);
       expect(config.mcpServers['original-server']).toBeDefined();
       expect(config.mcpServers['new-server']).toBeUndefined();
     });
 
     it('should clean up temp file on failure', async () => {
-      const configPath = path.join(testDir, '.claude.json');
+      const configPath = path.join(testDir, '.mcp.json');
       const tempPath = `${configPath}.tmp`;
 
       // Write original config
-      await writeClaudeJson(testDir, { mcpServers: {} });
+      await writeMcpJson(testDir, { mcpServers: {} });
 
       // Make directory read-only
       await fs.chmod(testDir, 0o444);
 
       try {
-        await writeClaudeJson(testDir, { mcpServers: { test: { command: 'node' } } });
+        await writeMcpJson(testDir, { mcpServers: { test: { command: 'node' } } });
       } catch (error) {
         // Expected
       }
@@ -166,7 +166,7 @@ describe('Atomic Write Pattern', () => {
 
   describe('Concurrent Write Protection', () => {
     it('should handle sequential writes without corruption', async () => {
-      const configs: ClaudeJsonConfig[] = [
+      const configs: McpJsonConfig[] = [
         { mcpServers: { 'server-1': { command: 'node', args: ['1.js'] } } },
         { mcpServers: { 'server-2': { command: 'node', args: ['2.js'] } } },
         { mcpServers: { 'server-3': { command: 'node', args: ['3.js'] } } },
@@ -174,26 +174,26 @@ describe('Atomic Write Pattern', () => {
 
       // Write all configs sequentially
       for (const config of configs) {
-        await writeClaudeJson(testDir, config);
+        await writeMcpJson(testDir, config);
       }
 
       // Final config should be the last one written
-      const finalConfig = await readClaudeJson(testDir);
+      const finalConfig = await readMcpJson(testDir);
       expect(finalConfig).toEqual(configs[2]);
 
       // File should be valid JSON
-      const content = await fs.readFile(path.join(testDir, '.claude.json'), 'utf-8');
+      const content = await fs.readFile(path.join(testDir, '.mcp.json'), 'utf-8');
       expect(() => JSON.parse(content)).not.toThrow();
     });
 
     it('should not leave stale backup or temp files after multiple writes', async () => {
-      const configPath = path.join(testDir, '.claude.json');
+      const configPath = path.join(testDir, '.mcp.json');
       const backupPath = `${configPath}.backup`;
       const tempPath = `${configPath}.tmp`;
 
       // Perform multiple writes
       for (let i = 0; i < 5; i++) {
-        await writeClaudeJson(testDir, {
+        await writeMcpJson(testDir, {
           mcpServers: { [`server-${i}`]: { command: 'node', args: [`${i}.js`] } },
         });
       }
@@ -209,12 +209,12 @@ describe('Atomic Write Pattern', () => {
 
   describe('File Permissions', () => {
     it('should maintain 644 permissions after multiple writes', async () => {
-      const configPath = path.join(testDir, '.claude.json');
+      const configPath = path.join(testDir, '.mcp.json');
 
       // Write multiple times
-      await writeClaudeJson(testDir, { mcpServers: { 'server-1': { command: 'node' } } });
-      await writeClaudeJson(testDir, { mcpServers: { 'server-2': { command: 'node' } } });
-      await writeClaudeJson(testDir, { mcpServers: { 'server-3': { command: 'node' } } });
+      await writeMcpJson(testDir, { mcpServers: { 'server-1': { command: 'node' } } });
+      await writeMcpJson(testDir, { mcpServers: { 'server-2': { command: 'node' } } });
+      await writeMcpJson(testDir, { mcpServers: { 'server-3': { command: 'node' } } });
 
       const stats = await fs.stat(configPath);
       const mode = stats.mode & parseInt('777', 8);
@@ -224,11 +224,11 @@ describe('Atomic Write Pattern', () => {
 
   describe('Zero-Corruption Guarantee', () => {
     it('should never have partially written or invalid JSON file', async () => {
-      const configPath = path.join(testDir, '.claude.json');
+      const configPath = path.join(testDir, '.mcp.json');
 
       // Perform many writes sequentially (concurrent writes would race)
       for (let i = 0; i < 10; i++) {
-        await writeClaudeJson(testDir, {
+        await writeMcpJson(testDir, {
           mcpServers: {
             [`server-${i}`]: {
               command: 'node',
@@ -243,14 +243,14 @@ describe('Atomic Write Pattern', () => {
       expect(() => JSON.parse(content)).not.toThrow();
 
       // Should have valid structure
-      const config = await readClaudeJson(testDir);
+      const config = await readMcpJson(testDir);
       expect(config.mcpServers).toBeDefined();
       expect(typeof config.mcpServers).toBe('object');
     });
 
     it('should preserve data integrity on system crash simulation', async () => {
       // Write initial config
-      const initialConfig: ClaudeJsonConfig = {
+      const initialConfig: McpJsonConfig = {
         mcpServers: {
           'critical-server': {
             command: 'node',
@@ -259,17 +259,17 @@ describe('Atomic Write Pattern', () => {
           },
         },
       };
-      await writeClaudeJson(testDir, initialConfig);
+      await writeMcpJson(testDir, initialConfig);
 
       // Verify initial state
-      let config = await readClaudeJson(testDir);
+      let config = await readMcpJson(testDir);
       expect(config).toEqual(initialConfig);
 
       // Simulate crash during write by making directory read-only
       await fs.chmod(testDir, 0o444);
 
       try {
-        await writeClaudeJson(testDir, {
+        await writeMcpJson(testDir, {
           mcpServers: { 'new-server': { command: 'node' } },
         });
       } catch (error) {
@@ -280,7 +280,7 @@ describe('Atomic Write Pattern', () => {
       await fs.chmod(testDir, 0o755);
 
       // Original config should still be valid and intact
-      config = await readClaudeJson(testDir);
+      config = await readMcpJson(testDir);
       expect(config).toEqual(initialConfig);
       expect(config.mcpServers['critical-server']).toBeDefined();
     });

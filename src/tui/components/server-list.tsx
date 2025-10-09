@@ -65,7 +65,7 @@ export const ServerList: React.FC<ServerListProps> = ({
               <Text dimColor>({server.command})</Text>
               {' '}
               <Text dimColor italic>
-                [{server.sourceType === 'local' ? 'local' : 'inherited'}]
+                [{server.hierarchyLevel === 0 ? 'private' : server.hierarchyLevel === 1 ? 'project' : 'global'}]
               </Text>
             </Text>
           </Box>

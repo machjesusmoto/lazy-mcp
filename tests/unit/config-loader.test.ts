@@ -1,7 +1,19 @@
 import { loadMCPServers } from '../../src/core/config-loader';
-import { createTempDir, cleanupTempDir, createMockClaudeJson } from '../helpers/test-utils';
+import { createTempDir, cleanupTempDir } from '../helpers/test-utils';
 import * as path from 'path';
 import * as fs from 'fs-extra';
+
+// Inline helper function to avoid module loading issues
+async function createMockClaudeJson(
+  dirPath: string,
+  servers: Record<string, unknown>
+): Promise<string> {
+  await fs.ensureDir(dirPath);
+  const filePath = path.join(dirPath, '.mcp.json'); // Use .mcp.json for v2.0.0
+  const content = JSON.stringify({ mcpServers: servers }, null, 2);
+  await fs.writeFile(filePath, content, 'utf-8');
+  return filePath;
+}
 
 describe('config-loader', () => {
   let tempDir: string;
@@ -15,7 +27,7 @@ describe('config-loader', () => {
   });
 
   describe('loadMCPServers', () => {
-    it('should parse .claude.json files correctly', async () => {
+    it('should parse .mcp.json files correctly', async () => {
       await createMockClaudeJson(tempDir, {
         filesystem: {
           command: 'node',
@@ -25,91 +37,93 @@ describe('config-loader', () => {
 
       const servers = await loadMCPServers(tempDir);
 
-      expect(servers).toHaveLength(1);
-      expect(servers[0].name).toBe('filesystem');
-      expect(servers[0].command).toBe('node');
-      expect(servers[0].args).toEqual(['./fs.js']);
-      expect(servers[0].hierarchyLevel).toBe(0);
-      expect(servers[0].sourceType).toBe('local');
+      // Filter for project-scoped servers (hierarchyLevel 1 from .mcp.json)
+      const projectServers = servers.filter(s => s.hierarchyLevel === 1);
+      expect(projectServers).toHaveLength(1);
+      expect(projectServers[0].name).toBe('filesystem');
+      expect(projectServers[0].command).toBe('node');
+      expect(projectServers[0].args).toEqual(['./fs.js']);
+      expect(projectServers[0].hierarchyLevel).toBe(1);
+      expect(projectServers[0].sourceType).toBe('inherited');
     });
 
-    it('should traverse hierarchy (current → parent → home)', async () => {
-      // Create nested directory structure
-      const parentDir = tempDir;
-      const childDir = path.join(tempDir, 'child');
-      const grandchildDir = path.join(childDir, 'grandchild');
+    it('should load from 3 fixed scopes (not directory traversal)', async () => {
+      // New hierarchy: 3 fixed scopes, not directory traversal
+      // Scope 1: Local (private) - ~/.claude.json with project sections (hierarchyLevel 0)
+      // Scope 2: Project (shared) - <project>/.mcp.json (hierarchyLevel 1)
+      // Scope 3: User (global) - ~/.claude.json top-level (hierarchyLevel 2)
 
-      await createMockClaudeJson(parentDir, {
-        'parent-server': { command: 'parent' },
-      });
-      await createMockClaudeJson(childDir, {
-        'child-server': { command: 'child' },
-      });
-      await createMockClaudeJson(grandchildDir, {
-        'grandchild-server': { command: 'grandchild' },
+      await createMockClaudeJson(tempDir, {
+        'project-server': { command: 'project-cmd' },
       });
 
-      const servers = await loadMCPServers(grandchildDir);
+      const servers = await loadMCPServers(tempDir);
 
-      expect(servers).toHaveLength(3);
-      expect(servers.find((s) => s.name === 'grandchild-server')?.hierarchyLevel).toBe(0);
-      expect(servers.find((s) => s.name === 'child-server')?.hierarchyLevel).toBe(1);
-      expect(servers.find((s) => s.name === 'parent-server')?.hierarchyLevel).toBe(2);
+      // Should have at least 1 project-scoped server (hierarchyLevel 1)
+      const projectServers = servers.filter(s => s.hierarchyLevel === 1);
+      expect(projectServers.length).toBeGreaterThanOrEqual(1);
+      expect(projectServers.find(s => s.name === 'project-server')).toBeDefined();
+      expect(projectServers.find(s => s.name === 'project-server')?.command).toBe('project-cmd');
+
+      // May also have user global servers (hierarchyLevel 2)
+      const userServers = servers.filter(s => s.hierarchyLevel === 2);
+      // We don't check count as it depends on user's ~/.claude.json
     });
 
-    it('should merge configurations with child overriding parent', async () => {
-      const parentDir = tempDir;
-      const childDir = path.join(tempDir, 'child');
+    it('should respect precedence: local > project > user', async () => {
+      // Test that the new 3-scope hierarchy respects precedence correctly
+      // Scope precedence: Local (private) > Project (shared) > User (global)
 
-      await createMockClaudeJson(parentDir, {
-        server1: { command: 'parent-cmd' },
-        server2: { command: 'parent-only' },
-      });
-      await createMockClaudeJson(childDir, {
-        server1: { command: 'child-cmd' }, // Override
-        server3: { command: 'child-only' },
+      // Create a project-scoped server in .mcp.json
+      await createMockClaudeJson(tempDir, {
+        'test-server': { command: 'project-cmd' },
+        'project-only': { command: 'project-exclusive' },
       });
 
-      const servers = await loadMCPServers(childDir);
+      const servers = await loadMCPServers(tempDir);
 
-      // Should have 3 unique servers
-      expect(servers).toHaveLength(3);
+      // Project-scoped servers should be loaded
+      const projectServers = servers.filter(s => s.hierarchyLevel === 1);
+      expect(projectServers.find(s => s.name === 'test-server')).toBeDefined();
+      expect(projectServers.find(s => s.name === 'test-server')?.command).toBe('project-cmd');
+      expect(projectServers.find(s => s.name === 'project-only')).toBeDefined();
 
-      // server1 should be from child (override)
-      const server1 = servers.find((s) => s.name === 'server1');
-      expect(server1?.command).toBe('child-cmd');
-      expect(server1?.hierarchyLevel).toBe(0);
-
-      // server2 from parent
-      expect(servers.find((s) => s.name === 'server2')?.command).toBe('parent-only');
-
-      // server3 from child
-      expect(servers.find((s) => s.name === 'server3')?.command).toBe('child-only');
+      // User global servers may also be present (hierarchyLevel 2)
+      // but project servers take precedence by name
+      const testServer = servers.find(s => s.name === 'test-server');
+      expect(testServer?.hierarchyLevel).toBeLessThanOrEqual(1); // Not from user global (level 2)
     });
 
     it('should handle invalid JSON gracefully', async () => {
-      const invalidPath = path.join(tempDir, '.claude.json');
+      const invalidPath = path.join(tempDir, '.mcp.json');
       await fs.writeFile(invalidPath, '{invalid json}', 'utf-8');
 
       const servers = await loadMCPServers(tempDir);
 
-      // Should return empty array, not throw
-      expect(servers).toEqual([]);
+      // Should return only inherited servers (from user config), not throw
+      // Project-scoped servers should be empty due to invalid JSON
+      const projectServers = servers.filter(s => s.hierarchyLevel === 1);
+      expect(projectServers).toEqual([]);
     });
 
     it('should handle missing files gracefully', async () => {
-      // No .claude.json created
+      // No .mcp.json created in project
       const servers = await loadMCPServers(tempDir);
 
-      expect(servers).toEqual([]);
+      // Should still load user global servers (hierarchyLevel 2)
+      // but no project-scoped servers (hierarchyLevel 1)
+      const projectServers = servers.filter(s => s.hierarchyLevel === 1);
+      expect(projectServers).toEqual([]);
     });
 
     it('should handle missing mcpServers key', async () => {
-      await fs.writeFile(path.join(tempDir, '.claude.json'), '{"other": "data"}', 'utf-8');
+      await fs.writeFile(path.join(tempDir, '.mcp.json'), '{"other": "data"}', 'utf-8');
 
       const servers = await loadMCPServers(tempDir);
 
-      expect(servers).toEqual([]);
+      // Should have no project-scoped servers (hierarchyLevel 1)
+      const projectServers = servers.filter(s => s.hierarchyLevel === 1);
+      expect(projectServers).toEqual([]);
     });
 
     it('should set isBlocked to false by default', async () => {

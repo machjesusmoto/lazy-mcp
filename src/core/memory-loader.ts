@@ -1,43 +1,51 @@
 /**
- * Memory file loader for .claude/memories/ directories.
- * Recursively scans for .md files in the hierarchy.
+ * Memory file loader using Claude Code's 2-scope hierarchy.
+ *
+ * Scopes:
+ * 1. Project (local): <project>/.claude/memories/
+ * 2. User (global): ~/.claude/memories/
+ *
+ * Note: There is no "shared" scope for memory files - they are either
+ * project-specific or user-global.
  */
 
 import * as path from 'path';
+import * as os from 'os';
 import * as fs from 'fs-extra';
 import glob from 'fast-glob';
 import { MemoryFile } from '../models';
-import { walkHierarchy, getHierarchyLevel } from '../utils/path-utils';
 
 /**
- * Load all memory files from .claude/memories/ directories in the hierarchy.
- * @param startDir - Starting directory (absolute path)
- * @returns Array of memory files with hierarchy metadata
+ * Load all memory files from the 2-scope hierarchy.
+ * @param projectDir - Project directory (absolute path)
+ * @returns Array of memory files with scope metadata
  */
-export async function loadMemoryFiles(startDir: string): Promise<MemoryFile[]> {
+export async function loadMemoryFiles(projectDir: string): Promise<MemoryFile[]> {
   // Validate input
-  if (!startDir || typeof startDir !== 'string') {
-    throw new Error('startDir must be a non-empty string');
+  if (!projectDir || typeof projectDir !== 'string') {
+    throw new Error('projectDir must be a non-empty string');
   }
-  if (!path.isAbsolute(startDir)) {
-    throw new Error('startDir must be an absolute path');
+  if (!path.isAbsolute(projectDir)) {
+    throw new Error('projectDir must be an absolute path');
   }
 
   const files: MemoryFile[] = [];
+  const homeDir = os.homedir();
 
-  for (const dir of walkHierarchy(startDir)) {
-    const memoriesDir = path.join(dir, '.claude', 'memories');
+  // Helper function to load memory files from a directory
+  async function loadFromDirectory(
+    baseDir: string,
+    sourceType: 'local' | 'inherited',
+    hierarchyLevel: number
+  ): Promise<void> {
+    const memoriesDir = path.join(baseDir, '.claude', 'memories');
 
     if (!(await fs.pathExists(memoriesDir))) {
-      continue;
+      return;
     }
 
-    const hierarchyLevel = getHierarchyLevel(startDir, dir);
-
-    // Find all .md files recursively
-    // Note: followSymbolicLinks should be true to find symlinked .md files
-    // but not traverse into symlinked directories (handled by onlyFiles: true)
-    const mdFiles = await glob('**/*.md', {
+    // Find all .md and .md.blocked files recursively (v2.0.0 blocking mechanism)
+    const mdFiles = await glob('**/*.{md,md.blocked}', {
       cwd: memoriesDir,
       absolute: false,
       onlyFiles: true,
@@ -48,17 +56,25 @@ export async function loadMemoryFiles(startDir: string): Promise<MemoryFile[]> {
       const absolutePath = path.join(memoriesDir, relativePath);
       const stats = await fs.lstat(absolutePath);
 
+      // Check if this is a blocked file (v2.0.0: .md.blocked extension)
+      const isBlocked = relativePath.endsWith('.md.blocked');
+
       const memoryFile: MemoryFile = {
         name: path.basename(relativePath),
         path: absolutePath,
         relativePath,
-        sourcePath: path.join(dir, '.claude'),
-        sourceType: hierarchyLevel === 0 ? 'local' : 'inherited',
+        sourcePath: path.join(baseDir, '.claude'),
+        sourceType,
         hierarchyLevel,
         size: stats.size,
-        isBlocked: false,
+        isBlocked,
         isSymlink: stats.isSymbolicLink(),
       };
+
+      // Set blockedAt timestamp for blocked files
+      if (isBlocked) {
+        memoryFile.blockedAt = stats.mtime;
+      }
 
       // Get symlink target if it's a symlink
       if (memoryFile.isSymlink) {
@@ -80,6 +96,12 @@ export async function loadMemoryFiles(startDir: string): Promise<MemoryFile[]> {
       files.push(memoryFile);
     }
   }
+
+  // Scope 1: Project (local) - <project>/.claude/memories/
+  await loadFromDirectory(projectDir, 'local', 0);
+
+  // Scope 2: User (global) - ~/.claude/memories/
+  await loadFromDirectory(homeDir, 'inherited', 1);
 
   return files;
 }

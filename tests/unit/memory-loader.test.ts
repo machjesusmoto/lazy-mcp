@@ -60,22 +60,21 @@ describe('memory-loader', () => {
       expect(linkedFile?.symlinkTarget).toBeTruthy();
     });
 
-    it('should traverse hierarchy correctly', async () => {
-      const parentDir = tempDir;
-      const childDir = path.join(tempDir, 'child');
+    it('should load from 2 fixed scopes (project + user)', async () => {
+      // Memory loader uses 2 fixed scopes, not directory hierarchy walk
+      // Scope 1: Project directory (hierarchyLevel 0)
+      // Scope 2: User home directory (hierarchyLevel 1)
 
-      await createMockMemoryFiles(parentDir, {
-        'parent.md': 'Parent memory',
-      });
-      await createMockMemoryFiles(childDir, {
-        'child.md': 'Child memory',
+      await createMockMemoryFiles(tempDir, {
+        'project.md': 'Project memory',
       });
 
-      const files = await loadMemoryFiles(childDir);
+      const files = await loadMemoryFiles(tempDir);
 
-      expect(files).toHaveLength(2);
-      expect(files.find((f) => f.name === 'child.md')?.hierarchyLevel).toBe(0);
-      expect(files.find((f) => f.name === 'parent.md')?.hierarchyLevel).toBe(1);
+      // Should have at least 1 project memory (may have user memories too)
+      const projectMemories = files.filter((f) => f.hierarchyLevel === 0);
+      expect(projectMemories.length).toBeGreaterThanOrEqual(1);
+      expect(projectMemories.find((f) => f.name === 'project.md')).toBeDefined();
     });
 
     it('should get content preview (first 200 chars)', async () => {

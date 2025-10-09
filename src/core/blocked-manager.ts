@@ -1,25 +1,25 @@
 /**
  * High-level blocking operations for MCP servers and memory files.
- * Implements v2.0.0 core business logic using .claude.json modification.
+ * Implements v2.0.0 core business logic using .mcp.json modification.
  */
 
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import {
-  readClaudeJson,
-  writeClaudeJson,
+  readMcpJson,
+  writeMcpJson,
   isBlockedServer,
   createDummyOverride,
   extractOriginalConfig,
-  ensureClaudeJson,
-} from '../utils/claude-json-utils';
+  ensureMcpJson,
+} from '../utils/mcp-json-utils';
 import type { UnblockResult, MigrationResult } from '../models/types';
 import type { MCPServer } from '../models/mcp-server';
 
 /**
- * Block a locally-defined MCP server by removing it from project .claude.json.
+ * Block a locally-defined MCP server by removing it from project .mcp.json.
  *
- * @param projectDir - Project directory containing .claude.json
+ * @param projectDir - Project directory containing .mcp.json
  * @param serverName - Name of the server to block
  * @throws Error if server not found in local config or write fails
  */
@@ -33,11 +33,11 @@ export async function blockLocalServer(projectDir: string, serverName: string): 
   }
 
   // Read current config
-  const config = await readClaudeJson(projectDir);
+  const config = await readMcpJson(projectDir);
 
   // Check if server exists in local config
   if (!config.mcpServers[serverName]) {
-    throw new Error(`Server '${serverName}' not found in local .claude.json`);
+    throw new Error(`Server '${serverName}' not found in local .mcp.json`);
   }
 
   // Check if server is already a blocked override (shouldn't block inherited servers as local)
@@ -51,11 +51,11 @@ export async function blockLocalServer(projectDir: string, serverName: string): 
   delete config.mcpServers[serverName];
 
   // Write updated config
-  await writeClaudeJson(projectDir, config);
+  await writeMcpJson(projectDir, config);
 }
 
 /**
- * Block an inherited MCP server by creating a dummy override in project .claude.json.
+ * Block an inherited MCP server by creating a dummy override in project .mcp.json.
  *
  * @param projectDir - Project directory where override will be created
  * @param server - MCPServer object with full config and metadata
@@ -73,11 +73,11 @@ export async function blockInheritedServer(projectDir: string, server: MCPServer
     throw new Error(`Server '${server.name}' is not inherited (sourceType: ${server.sourceType})`);
   }
 
-  // Ensure .claude.json exists in project
-  await ensureClaudeJson(projectDir);
+  // Ensure .mcp.json exists in project
+  await ensureMcpJson(projectDir);
 
   // Read current config
-  const config = await readClaudeJson(projectDir);
+  const config = await readMcpJson(projectDir);
 
   // Check if server already has an override
   if (config.mcpServers[server.name]) {
@@ -99,7 +99,7 @@ export async function blockInheritedServer(projectDir: string, server: MCPServer
   config.mcpServers[server.name] = createDummyOverride(server.name, original);
 
   // Write updated config
-  await writeClaudeJson(projectDir, config);
+  await writeMcpJson(projectDir, config);
 }
 
 /**
@@ -127,12 +127,12 @@ export async function unblockLocalServer(
   return {
     success: true,
     requiresManualAdd: true,
-    message: `Local server '${serverName}' has been unblocked.\nYou must manually add its configuration to .claude.json to use it again.\n\nExample configuration:\n{\n  "mcpServers": {\n    "${serverName}": {\n      "command": "npx",\n      "args": ["-y", "@package/name"]\n    }\n  }\n}`,
+    message: `Local server '${serverName}' has been unblocked.\nYou must manually add its configuration to .mcp.json to use it again.\n\nExample configuration:\n{\n  "mcpServers": {\n    "${serverName}": {\n      "command": "npx",\n      "args": ["-y", "@package/name"]\n    }\n  }\n}`,
   };
 }
 
 /**
- * Unblock an inherited MCP server by removing the override from project .claude.json.
+ * Unblock an inherited MCP server by removing the override from project .mcp.json.
  *
  * @param projectDir - Project directory containing override
  * @param serverName - Name of the server to unblock
@@ -151,11 +151,11 @@ export async function unblockInheritedServer(
   }
 
   // Read current config
-  const config = await readClaudeJson(projectDir);
+  const config = await readMcpJson(projectDir);
 
   // Check if server exists in config
   if (!config.mcpServers[serverName]) {
-    throw new Error(`Server '${serverName}' not found in project .claude.json`);
+    throw new Error(`Server '${serverName}' not found in project .mcp.json`);
   }
 
   // Check if it's a blocked override
@@ -169,7 +169,7 @@ export async function unblockInheritedServer(
   delete config.mcpServers[serverName];
 
   // Write updated config
-  await writeClaudeJson(projectDir, config);
+  await writeMcpJson(projectDir, config);
 }
 
 /**
@@ -241,7 +241,7 @@ export async function unblockMemoryFile(filePath: string): Promise<void> {
 }
 
 /**
- * Migrate from legacy .claude/blocked.md format to new .claude.json mechanism.
+ * Migrate from legacy .claude/blocked.md format to new .mcp.json mechanism.
  * Automatically called on first run of v2.0.0 if legacy file exists.
  *
  * @param projectDir - Project directory to check for legacy file
