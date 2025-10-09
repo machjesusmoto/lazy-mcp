@@ -39,3 +39,13 @@ yarn-error.log*
 # Temporary files
 *.tmp
 .temp/
+
+# Development & Documentation (not for package)
+.claude/
+.specify/
+specs/
+docs/
+GITHUB_SETUP.md
+NPM_PUBLISH.md
+RELEASE_CHECKLIST.md
+setup-github.sh
