@@ -22,6 +22,11 @@ export interface StatusBarProps {
    * Whether write permission is available
    */
   hasWritePermission?: boolean;
+
+  /**
+   * Currently focused panel (for context-aware navigation guide)
+   */
+  focusPanel?: 'servers' | 'memory' | 'agents';
 }
 
 /**
@@ -38,9 +43,23 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   projectPath,
   hasUnsavedChanges = false,
   hasWritePermission = true,
+  focusPanel = 'servers',
 }) => {
   const activeServers = stats.totalMcpServers - stats.blockedMcpServers;
   const activeMemory = stats.totalMemoryFiles - stats.blockedMemoryFiles;
+
+  // Context-aware navigation guide based on active panel
+  const getNavigationGuide = () => {
+    const baseControls = '↑/↓: Navigate • Tab: Switch Panel • Space: Toggle';
+    const saveControl = 'Enter: Save';
+    const quitControl = 'Q: Quit';
+
+    if (focusPanel === 'agents') {
+      return `${baseControls} • →/e: Expand • ←/c: Collapse • ${saveControl} • ${quitControl}`;
+    }
+
+    return `${baseControls} • ${saveControl} • ${quitControl}`;
+  };
 
   return (
     <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
@@ -99,7 +118,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         </Box>
 
         <Box>
-          <Text dimColor>Tab: Switch Panel • Space: Toggle • Enter: Save • Q: Quit</Text>
+          <Text dimColor>{getNavigationGuide()}</Text>
         </Box>
       </Box>
     </Box>

@@ -172,14 +172,6 @@ export const AgentList: React.FC<AgentListProps> = ({
           </Text>
         </Box>
       )}
-
-      {isFocused && agents.length > 0 && (
-        <Box paddingLeft={2}>
-          <Text dimColor>
-            ↑/↓: Navigate • Space: Toggle • →/e: Expand • ←/c: Collapse • Tab: Switch • Q: Quit
-          </Text>
-        </Box>
-      )}
     </Box>
   );
 };

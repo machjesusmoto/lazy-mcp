@@ -502,10 +502,10 @@ export const App: React.FC<AppProps> = ({ projectDir = process.cwd(), noClaudeMd
   const contextStats = calculateContextStats(context); // T037: Calculate context stats for summary
 
   return (
-    <Box flexDirection="column" padding={1}>
+    <Box flexDirection="column" height="100%">
       {/* T015/T017: Memory migration prompt (shows before main UI if needed) */}
       {showMemoryMigration && memoryMigration.state === 'prompt' && (
-        <Box marginBottom={1}>
+        <Box marginBottom={1} paddingX={1}>
           <MemoryMigrationPrompt
             filesToMigrate={memoryMigration.filesToMigrate}
             isProcessing={memoryMigration.isProcessing}
@@ -529,7 +529,7 @@ export const App: React.FC<AppProps> = ({ projectDir = process.cwd(), noClaudeMd
         memoryMigration.state === 'error' ||
         memoryMigration.state === 'skipped'
       ) && (
-        <Box marginBottom={1}>
+        <Box marginBottom={1} paddingX={1}>
           <MemoryMigrationStatus
             state={memoryMigration.state}
             result={memoryMigration.result}
@@ -542,19 +542,24 @@ export const App: React.FC<AppProps> = ({ projectDir = process.cwd(), noClaudeMd
         </Box>
       )}
 
-      <StatusBar
-        stats={stats}
-        projectPath={context.projectPath}
-        hasUnsavedChanges={hasUnsavedChanges}
-        hasWritePermission={context.hasWritePermission}
-      />
+      {/* FIXED HEADER: Always visible at top */}
+      <Box flexDirection="column" paddingX={1}>
+        <StatusBar
+          stats={stats}
+          projectPath={context.projectPath}
+          hasUnsavedChanges={hasUnsavedChanges}
+          hasWritePermission={context.hasWritePermission}
+          focusPanel={focusPanel}
+        />
 
-      {/* T037: Context Summary - unified overview of all context sources */}
-      <Box marginTop={1}>
-        <ContextSummary stats={contextStats} />
+        {/* T037: Context Summary - unified overview of all context sources */}
+        <Box marginTop={1}>
+          <ContextSummary stats={contextStats} />
+        </Box>
       </Box>
 
-      <Box marginTop={1} flexDirection="column">
+      {/* SCROLLABLE CONTENT: Lists can scroll */}
+      <Box flexGrow={1} flexDirection="column" paddingX={1} marginTop={1}>
         <ServerList
           servers={servers}
           selectedIndex={serverIndex}
@@ -581,7 +586,7 @@ export const App: React.FC<AppProps> = ({ projectDir = process.cwd(), noClaudeMd
       </Box>
 
       {showMigrationMenu && migration.operation && (
-        <Box marginTop={1}>
+        <Box marginTop={1} paddingX={1}>
           <MigrationMenu
             operation={migration.operation}
             selectedConflictIndex={conflictIndex}

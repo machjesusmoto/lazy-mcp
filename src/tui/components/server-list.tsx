@@ -78,14 +78,6 @@ export const ServerList: React.FC<ServerListProps> = ({
           </Box>
         );
       })}
-
-      {isFocused && servers.length > 0 && (
-        <Box paddingLeft={2}>
-          <Text dimColor>
-            ↑/↓: Navigate • Space: Toggle • Enter: Save • Q: Quit
-          </Text>
-        </Box>
-      )}
     </Box>
   );
 };
