@@ -466,3 +466,92 @@ export function validateMigrationOperation(
 
   return { valid: errors.length === 0, errors };
 }
+
+// ============================================================================
+// Memory File Migration Types (Feature: 003-add-migrate-to, Tasks: T013-T014)
+// ============================================================================
+
+/**
+ * Result of migrating legacy .md.blocked files to settings.json deny patterns
+ *
+ * Provides detailed results for user feedback about memory file migration.
+ * This is separate from ServerMigrationResult as memory migration is simpler
+ * (no conflicts, just file detection and pattern addition).
+ */
+export interface MemoryMigrationResult {
+  /** Overall migration success */
+  success: boolean;
+
+  /** List of memory files successfully migrated */
+  migratedFiles: string[];
+
+  /** List of files that failed to migrate with error messages */
+  failedFiles: { file: string; error: string }[];
+
+  /** Human-readable summary message */
+  summary: string;
+}
+
+// ============================================================================
+// Agent Management Types (Feature: 004-comprehensive-context-management, US2)
+// ============================================================================
+
+/**
+ * Subagent source location
+ */
+export type AgentSource = 'project' | 'user';
+
+/**
+ * Parsed agent frontmatter metadata
+ */
+export interface AgentFrontmatter {
+  /** Agent name (required) */
+  name: string;
+
+  /** Human-readable description (required) */
+  description: string;
+
+  /** Display color (optional) */
+  color?: string;
+
+  /** Model to use (optional) */
+  model?: string;
+
+  /** Comma-separated list of tool names (optional) */
+  tools?: string;
+}
+
+/**
+ * Complete subagent representation
+ */
+export interface SubAgent {
+  /** Agent name from frontmatter */
+  name: string;
+
+  /** Description from frontmatter */
+  description: string;
+
+  /** Absolute path to agent file */
+  filePath: string;
+
+  /** Source location (project or user level) */
+  source: AgentSource;
+
+  /** True if this project agent overrides a user agent */
+  isOverride: boolean;
+
+  /** True if agent is blocked via permissions.deny */
+  isBlocked: boolean;
+
+  /** Model specified in frontmatter (optional) */
+  model?: string;
+
+  /** List of tool names from frontmatter (optional) */
+  tools?: string[];
+
+  /** Display color from frontmatter (optional) */
+  color?: string;
+
+  /** Estimated token count for this agent's markdown file */
+  estimatedTokens?: number;
+}

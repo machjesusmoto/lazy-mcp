@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import type { MCPServer } from '../../models';
+import { formatTokenCount } from '../../utils/token-estimator';
 
 export interface ServerListProps {
   /**
@@ -67,6 +68,12 @@ export const ServerList: React.FC<ServerListProps> = ({
               <Text dimColor italic>
                 [{server.hierarchyLevel === 0 ? 'private' : server.hierarchyLevel === 1 ? 'project' : 'global'}]
               </Text>
+              {server.estimatedTokens && server.estimatedTokens > 0 && (
+                <>
+                  {' '}
+                  <Text color="cyan">{formatTokenCount(server.estimatedTokens)} tokens</Text>
+                </>
+              )}
             </Text>
           </Box>
         );

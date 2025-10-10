@@ -5,6 +5,83 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2025-10-10
+
+### Added
+
+#### Agent Management System
+- **Agent Discovery & Enumeration** - Complete subagent management system
+  - Scans `.claude/agents/*.md` files in project and user directories
+  - Two-scope hierarchy: Project (`.claude/agents/`) and User (`~/.claude/agents/`)
+  - Project agents override user agents with same name
+  - Frontmatter parsing with YAML support for agent metadata (name, description, model, tools, color)
+  - Automatic extraction of short descriptions from multi-line frontmatter
+  - Agent blocking/unblocking via permissions.deny patterns
+
+#### Token Calculation & Display
+- **Context Size Estimation** - Offline token calculation for all context items
+  - `estimateTextTokens()` - ~4 characters per token for plain text
+  - `estimateJsonTokens()` - ~3.5 characters per token for JSON configs
+  - `estimateMarkdownTokens()` - ~3.8 characters per token for Markdown files
+  - `formatTokenCount()` - Human-readable formatting with K suffix (e.g., "2.5K tokens")
+  - Token counts displayed in cyan for all MCP servers, memory files, and agents
+  - No API key required - completely offline estimation
+
+#### TUI Enhancements
+- **Agent List Component** - New dedicated UI for agent management
+  - Visual status indicators (✓ active, ✗ blocked)
+  - Source badges ([P] project, [U] user, [O] override)
+  - Collapsible descriptions with expand/collapse controls
+  - Agent details panel with full metadata display
+  - Token count display for each agent
+
+- **Collapse/Expand Functionality** - Multi-line entry management
+  - Default collapsed view for long descriptions (>100 characters)
+  - `→` or `e` key to expand entries
+  - `←` or `c` key to collapse entries
+  - Visual indicators show available actions ([→/e to expand], [←/c to collapse])
+  - Implemented across agent, memory, and server lists
+
+- **Token Display Integration** - Context size visibility
+  - Cyan-colored token counts for all context items
+  - Formatted display (e.g., "1.2K tokens" for readability)
+  - Conditional rendering (only shows when tokens > 0)
+  - Consistent placement across all list components
+
+#### Documentation
+- **Memory Systems Documentation** - Comprehensive clarification guide
+  - Created `docs/MEMORY_SYSTEMS.md` explaining Claude Code vs Serena memories
+  - Directory structure comparison (.claude vs .serena)
+  - Purpose and management differences
+  - Usage recommendations and examples
+  - Updated code documentation in `memory-loader.ts`
+
+### Changed
+
+- **Type Definitions** - Enhanced with token estimation fields
+  - Added `estimatedTokens?: number` to `MCPServer` interface
+  - Added `estimatedTokens?: number` to `MemoryFile` interface
+  - Added `estimatedTokens?: number` to `SubAgent` interface
+
+- **Core Loaders** - Token calculation integration
+  - `config-loader.ts` - Calculates JSON token estimates for MCP servers
+  - `memory-loader.ts` - Calculates Markdown token estimates for memory files
+  - `agent-manager.ts` - Calculates Markdown token estimates for agents
+
+### Technical Details
+
+#### New Modules
+- `src/utils/token-estimator.ts` - Token estimation utilities
+- `src/core/agent-manager.ts` - Agent discovery and management
+- `src/tui/components/agent-list.tsx` - Agent list UI component
+- `src/utils/frontmatter-parser.ts` - YAML frontmatter parsing
+- `docs/MEMORY_SYSTEMS.md` - Memory systems documentation
+
+#### Performance
+- Offline token estimation (no network calls required)
+- Efficient frontmatter parsing with error handling
+- Graceful degradation for malformed agent files
+
 ## [0.1.1] - 2025-10-08
 
 ### Fixed

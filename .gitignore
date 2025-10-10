@@ -45,6 +45,7 @@ yarn-error.log*
 .specify/
 specs/
 docs/
+!docs/MEMORY_SYSTEMS.md
 GITHUB_SETUP.md
 NPM_PUBLISH.md
 RELEASE_CHECKLIST.md

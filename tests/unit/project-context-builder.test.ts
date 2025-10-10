@@ -3,6 +3,13 @@ import { computeStats } from '../../src/models/project-context';
 import { createTempDir, cleanupTempDir, createMockMemoryFiles } from '../helpers/test-utils';
 import * as fs from 'fs-extra';
 import * as path from 'path';
+import * as os from 'os';
+
+// Mock os.homedir to use test directory
+jest.mock('os', () => ({
+  ...jest.requireActual('os'),
+  homedir: jest.fn(() => require('os').tmpdir()),
+}));
 
 // Inline v2.0.0 helper functions to avoid module loading issues
 async function createMockMcpJson(

@@ -12,6 +12,7 @@ import type {
   ServerMigrationResult,
   ResolutionType,
   MCPServerConfig,
+  MemoryMigrationResult,
 } from '../models/types';
 
 /**
@@ -454,4 +455,134 @@ export function applyResolutions(
   }
 
   return result;
+}
+
+// ============================================================================
+// Memory File Migration Functions (Feature: 003-add-migrate-to, Tasks: T013-T014)
+// ============================================================================
+
+/**
+ * Detect legacy .md.blocked files in .claude/ directory
+ *
+ * Task: T013
+ * Scans for files with .blocked extension in .claude/memories/ directory
+ * and extracts original filenames.
+ *
+ * @param projectDir - Absolute path to project directory
+ * @returns Array of original filenames (without .blocked extension)
+ */
+export async function detectOldBlockedFiles(projectDir: string): Promise<string[]> {
+  const fs = require('fs-extra');
+  const path = require('path');
+  const fg = require('fast-glob');
+
+  const claudeDir = path.join(projectDir, '.claude');
+
+  // Check if .claude directory exists
+  if (!(await fs.pathExists(claudeDir))) {
+    return [];
+  }
+
+  try {
+    // Search for .blocked files in .claude directory
+    const blockedFiles = await fg('**/*.blocked', {
+      cwd: claudeDir,
+      absolute: false,
+      onlyFiles: true,
+    });
+
+    // Extract original filenames (remove .blocked extension)
+    const originalNames = blockedFiles.map((file: string) => {
+      return file.replace(/\.blocked$/, '');
+    });
+
+    return originalNames;
+  } catch (error) {
+    // If scan fails, return empty array
+    console.error('Error scanning for blocked files:', error);
+    return [];
+  }
+}
+
+/**
+ * Migrate legacy .md.blocked files to settings.json deny patterns
+ *
+ * Task: T014
+ * For each .blocked file found:
+ * 1. Extract original filename
+ * 2. Add to settings.json using memory-blocker
+ * 3. Delete .blocked file
+ * 4. Track success/failures
+ *
+ * @param projectDir - Absolute path to project directory
+ * @returns Migration result with summary
+ */
+export async function migrateBlockedFiles(projectDir: string): Promise<MemoryMigrationResult> {
+  const fs = require('fs-extra');
+  const path = require('path');
+  const { blockMemoryFile } = require('./memory-blocker');
+
+  const migratedFiles: string[] = [];
+  const failedFiles: { file: string; error: string }[] = [];
+
+  try {
+    // Detect all .blocked files
+    const blockedFiles = await detectOldBlockedFiles(projectDir);
+
+    if (blockedFiles.length === 0) {
+      return {
+        success: true,
+        migratedFiles: [],
+        failedFiles: [],
+        summary: 'No legacy .blocked files found to migrate',
+      };
+    }
+
+    // Migrate each file
+    for (const originalFile of blockedFiles) {
+      const blockedFilePath = path.join(projectDir, '.claude', `${originalFile}.blocked`);
+
+      try {
+        // Add to settings.json deny patterns
+        await blockMemoryFile(projectDir, originalFile);
+
+        // Delete .blocked file
+        await fs.remove(blockedFilePath);
+
+        // Track success
+        migratedFiles.push(originalFile);
+      } catch (error) {
+        // Track failure
+        failedFiles.push({
+          file: originalFile,
+          error: (error as Error).message,
+        });
+      }
+    }
+
+    // Build summary
+    const totalFiles = blockedFiles.length;
+    const successCount = migratedFiles.length;
+    const failureCount = failedFiles.length;
+
+    const success = failureCount === 0;
+    const summary = success
+      ? `Successfully migrated ${successCount} memory file(s) to settings.json`
+      : `Migrated ${successCount}/${totalFiles} memory file(s). ${failureCount} failed.`;
+
+    return {
+      success,
+      migratedFiles,
+      failedFiles,
+      summary,
+    };
+  } catch (error) {
+    // Catastrophic failure
+    return {
+      success: false,
+      migratedFiles,
+      failedFiles,
+      summary: `Migration failed: ${(error as Error).message}`,
+    };
+  }
 }

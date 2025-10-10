@@ -36,14 +36,20 @@ export async function buildProjectContext(projectDir: string): Promise<ProjectCo
     console.error('[DEBUG] Starting project context enumeration...');
   }
 
+  // Import agent functions
+  const { discoverAgents, checkAgentBlockedStatus } = await import('./agent-manager');
+
   // Load all data sources in parallel
-  const [mcpServers, memoryFiles] = await Promise.all([
+  const [mcpServers, memoryFiles, agents] = await Promise.all([
     loadMCPServers(projectDir),
     loadMemoryFiles(projectDir),
+    discoverAgents(projectDir).then(discoveredAgents =>
+      checkAgentBlockedStatus(projectDir, discoveredAgents)
+    ),
   ]);
 
   if (debug) {
-    console.error(`[DEBUG] Loaded ${mcpServers.length} MCP servers, ${memoryFiles.length} memory files`);
+    console.error(`[DEBUG] Loaded ${mcpServers.length} MCP servers, ${memoryFiles.length} memory files, ${agents.length} agents`);
   }
 
   // In v2.0.0, blocked state is detected directly from .mcp.json and .md.blocked files
@@ -161,6 +167,7 @@ export async function buildProjectContext(projectDir: string): Promise<ProjectCo
     projectPath: projectDir,
     mcpServers,
     memoryFiles,
+    agents,
     configSources,
     blockedItems,
     claudeDotClaudePath: (await fs.pathExists(claudeDir)) ? claudeDir : undefined,

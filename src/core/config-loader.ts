@@ -14,6 +14,7 @@ import * as os from 'os';
 import * as fs from 'fs-extra';
 import { MCPServer } from '../models';
 import { safeReadJSON } from '../utils/json-parser';
+import { estimateJsonTokens } from '../utils/token-estimator';
 
 /**
  * Load all MCP servers from the 3-scope hierarchy.
@@ -54,6 +55,7 @@ export async function loadMCPServers(projectDir: string): Promise<MCPServer[]> {
               sourceType: 'local',
               hierarchyLevel: 0,
               isBlocked: false,
+              estimatedTokens: estimateJsonTokens(server),
             };
 
             // Preserve v2.0.0 blocking metadata
@@ -87,6 +89,7 @@ export async function loadMCPServers(projectDir: string): Promise<MCPServer[]> {
             sourceType: 'inherited',
             hierarchyLevel: 1,
             isBlocked: false,
+            estimatedTokens: estimateJsonTokens(server),
           };
 
           // Preserve v2.0.0 blocking metadata
@@ -118,6 +121,7 @@ export async function loadMCPServers(projectDir: string): Promise<MCPServer[]> {
             sourceType: 'inherited',
             hierarchyLevel: 2,
             isBlocked: false,
+            estimatedTokens: estimateJsonTokens(server),
           };
 
           // Preserve v2.0.0 blocking metadata

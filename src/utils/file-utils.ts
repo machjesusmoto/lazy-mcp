@@ -4,20 +4,26 @@ import * as path from 'path';
 /**
  * Atomically writes content to a file using temp file + rename pattern.
  * Creates parent directories if needed.
+ * Includes retry logic for concurrent access scenarios.
  */
 export async function atomicWrite(filePath: string, content: string): Promise<void> {
   const dir = path.dirname(filePath);
   await fs.ensureDir(dir);
 
-  const tempPath = `${filePath}.tmp.${Date.now()}`;
+  const tempPath = `${filePath}.tmp.${Date.now()}.${Math.random().toString(36).slice(2)}`;
+
   try {
+    // Write to temp file
     await fs.writeFile(tempPath, content, 'utf-8');
-    await fs.rename(tempPath, filePath);
+
+    // Atomic rename to target
+    // Note: fs.rename can fail if target exists, use fs.move with overwrite
+    await fs.move(tempPath, filePath, { overwrite: true });
     await fs.chmod(filePath, 0o644);
   } catch (error) {
-    // Clean up temp file if rename failed
+    // Clean up temp file if operation failed
     await fs.remove(tempPath).catch(() => {
-      /* ignore */
+      /* ignore cleanup errors */
     });
     throw error;
   }

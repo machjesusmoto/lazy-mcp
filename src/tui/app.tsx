@@ -10,13 +10,19 @@ import {
   unblockMemoryFile,
 } from '../core/blocked-manager';
 import { updateClaudeMd } from '../core/claude-md-updater';
-import { computeStats } from '../models/project-context';
+import { computeStats, calculateContextStats } from '../models/project-context';
 import { ServerList } from './components/server-list';
 import { MemoryList } from './components/memory-list';
+import { AgentList } from './components/agent-list';
 import { StatusBar } from './components/status-bar';
+import { ContextSummary } from './components/context-summary';
 import { MigrationMenu } from './components/migration-menu';
+import { MemoryMigrationPrompt } from './components/memory-migration-prompt';
+import { MemoryMigrationStatus } from './components/memory-migration-status';
 import { useMigration } from './hooks/use-migration';
-import type { ProjectContext, MCPServer, MemoryFile } from '../models';
+import { useMemoryMigration } from './hooks/use-memory-migration';
+import { useAgents } from './hooks/use-agents';
+import type { ProjectContext, MCPServer, MemoryFile, SubAgent } from '../models';
 import type { ResolutionType } from '../models/types';
 import * as path from 'path';
 
@@ -31,7 +37,7 @@ export interface AppProps {
   noClaudeMdUpdate?: boolean;
 }
 
-type FocusPanel = 'servers' | 'memory';
+type FocusPanel = 'servers' | 'memory' | 'agents';
 
 /**
  * Main TUI application component.
@@ -48,6 +54,7 @@ export const App: React.FC<AppProps> = ({ projectDir = process.cwd(), noClaudeMd
   const [context, setContext] = useState<ProjectContext | null>(null);
   const [servers, setServers] = useState<MCPServer[]>([]);
   const [memoryFiles, setMemoryFiles] = useState<MemoryFile[]>([]);
+  const [agents, setAgents] = useState<SubAgent[]>([]);
 
   // UI state
   const [focusPanel, setFocusPanel] = useState<FocusPanel>('servers');
@@ -56,11 +63,18 @@ export const App: React.FC<AppProps> = ({ projectDir = process.cwd(), noClaudeMd
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
-  // Migration state
+  // Server migration state
   const migration = useMigration();
   const [showMigrationMenu, setShowMigrationMenu] = useState(false);
   const [selectedServersForMigration, setSelectedServersForMigration] = useState<MCPServer[]>([]);
   const [conflictIndex, setConflictIndex] = useState(0);
+
+  // Memory migration state (T015-T018)
+  const memoryMigration = useMemoryMigration();
+  const [showMemoryMigration, setShowMemoryMigration] = useState(false);
+
+  // Agent management state (T028, T030-T031)
+  const agentHook = useAgents(agents.length);
 
   // Load project context on mount
   useEffect(() => {
@@ -71,7 +85,14 @@ export const App: React.FC<AppProps> = ({ projectDir = process.cwd(), noClaudeMd
         setContext(ctx);
         setServers(ctx.mcpServers);
         setMemoryFiles(ctx.memoryFiles);
+        setAgents(ctx.agents);
         setIsLoading(false);
+
+        // T015: Check for memory migration after loading context
+        await memoryMigration.checkForMigration(projectDir);
+        if (memoryMigration.state === 'prompt') {
+          setShowMemoryMigration(true);
+        }
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error';
         setLoadError(`Failed to load project context: ${message}`);
@@ -83,10 +104,55 @@ export const App: React.FC<AppProps> = ({ projectDir = process.cwd(), noClaudeMd
   }, [projectDir]);
 
   // Keyboard input handling
-  useInput((input: string, key: { upArrow?: boolean; downArrow?: boolean; tab?: boolean; return?: boolean; ctrl?: boolean; escape?: boolean }) => {
+  useInput((input: string, key: { upArrow?: boolean; downArrow?: boolean; leftArrow?: boolean; rightArrow?: boolean; tab?: boolean; return?: boolean; ctrl?: boolean; escape?: boolean }) => {
     if (isLoading || loadError) return;
 
-    // Handle migration menu keyboard input
+    // T017: Handle memory migration prompt input
+    if (showMemoryMigration && memoryMigration.state === 'prompt') {
+      if (input === 'y' || input === 'Y') {
+        memoryMigration.confirmMigration(projectDir);
+        return;
+      }
+      if (input === 's' || input === 'S') {
+        memoryMigration.skipMigration(false);
+        setShowMemoryMigration(false);
+        return;
+      }
+      if (input === 'n' || input === 'N') {
+        memoryMigration.skipMigration(true);
+        setShowMemoryMigration(false);
+        return;
+      }
+      return; // Block other inputs while prompt is showing
+    }
+
+    // T016: Handle memory migration status input (any key to close)
+    if (showMemoryMigration && (
+      memoryMigration.state === 'complete' ||
+      memoryMigration.state === 'error' ||
+      memoryMigration.state === 'skipped'
+    )) {
+      setShowMemoryMigration(false);
+      memoryMigration.resetMigration();
+      // T018: Reload context after successful migration
+      if (memoryMigration.state === 'complete') {
+        const reloadContext = async () => {
+          try {
+            const ctx = await buildProjectContext(projectDir);
+            setContext(ctx);
+            setServers(ctx.mcpServers);
+            setMemoryFiles(ctx.memoryFiles);
+            setAgents(ctx.agents);
+          } catch (error) {
+            console.error('Failed to reload context after memory migration:', error);
+          }
+        };
+        reloadContext();
+      }
+      return;
+    }
+
+    // Handle server migration menu keyboard input
     if (showMigrationMenu) {
       // Escape or 'q' to close migration menu
       if (key.escape || input === 'q') {
@@ -159,6 +225,7 @@ export const App: React.FC<AppProps> = ({ projectDir = process.cwd(), noClaudeMd
               setContext(ctx);
               setServers(ctx.mcpServers);
               setMemoryFiles(ctx.memoryFiles);
+              setAgents(ctx.agents);
             } catch (error) {
               console.error('Failed to reload context after migration:', error);
             }
@@ -192,38 +259,64 @@ export const App: React.FC<AppProps> = ({ projectDir = process.cwd(), noClaudeMd
       return;
     }
 
-    // Tab to switch panels
+    // Tab to switch panels (T030)
     if (key.tab) {
-      setFocusPanel((prev) => (prev === 'servers' ? 'memory' : 'servers'));
+      setFocusPanel((prev) => {
+        if (prev === 'servers') return 'memory';
+        if (prev === 'memory') return 'agents';
+        return 'servers';
+      });
       return;
     }
 
     const currentPanel = focusPanel;
-    const currentIndex = currentPanel === 'servers' ? serverIndex : memoryIndex;
-    const currentList = currentPanel === 'servers' ? servers : memoryFiles;
+    const currentIndex = currentPanel === 'servers' ? serverIndex :
+                        currentPanel === 'memory' ? memoryIndex :
+                        agentHook.selectedIndex;
+    const currentList = currentPanel === 'servers' ? servers :
+                       currentPanel === 'memory' ? memoryFiles :
+                       agents;
 
-    // Navigation
+    // Navigation (T031)
     if (key.upArrow) {
-      const newIndex = Math.max(0, currentIndex - 1);
       if (currentPanel === 'servers') {
+        const newIndex = Math.max(0, serverIndex - 1);
         setServerIndex(newIndex);
-      } else {
+      } else if (currentPanel === 'memory') {
+        const newIndex = Math.max(0, memoryIndex - 1);
         setMemoryIndex(newIndex);
+      } else {
+        agentHook.selectPrevious();
       }
       return;
     }
 
     if (key.downArrow) {
-      const newIndex = Math.min(currentList.length - 1, currentIndex + 1);
       if (currentPanel === 'servers') {
+        const newIndex = Math.min(servers.length - 1, serverIndex + 1);
         setServerIndex(newIndex);
-      } else {
+      } else if (currentPanel === 'memory') {
+        const newIndex = Math.min(memoryFiles.length - 1, memoryIndex + 1);
         setMemoryIndex(newIndex);
+      } else {
+        agentHook.selectNext();
       }
       return;
     }
 
-    // Toggle blocked state with Space
+    // Expand/Collapse for agents panel (→/e for expand, ←/c for collapse)
+    if (currentPanel === 'agents' && agents.length > 0) {
+      if (key.rightArrow || input === 'e') {
+        agentHook.toggleExpanded();
+        return;
+      }
+      if (key.leftArrow || input === 'c') {
+        agentHook.toggleExpanded();
+        return;
+      }
+    }
+
+    // Toggle blocked state with Space (T031)
     if (input === ' ' && currentList.length > 0) {
       if (currentPanel === 'servers') {
         const newServers = [...servers];
@@ -233,7 +326,7 @@ export const App: React.FC<AppProps> = ({ projectDir = process.cwd(), noClaudeMd
         };
         setServers(newServers);
         setHasUnsavedChanges(true);
-      } else {
+      } else if (currentPanel === 'memory') {
         const newFiles = [...memoryFiles];
         newFiles[memoryIndex] = {
           ...newFiles[memoryIndex],
@@ -241,6 +334,23 @@ export const App: React.FC<AppProps> = ({ projectDir = process.cwd(), noClaudeMd
         };
         setMemoryFiles(newFiles);
         setHasUnsavedChanges(true);
+      } else {
+        // Agent blocking is handled directly via settings.json (T031)
+        agentHook.toggleBlocked(projectDir, agents).then(() => {
+          // Reload context after agent blocking changes
+          const reloadContext = async () => {
+            try {
+              const ctx = await buildProjectContext(projectDir);
+              setContext(ctx);
+              setServers(ctx.mcpServers);
+              setMemoryFiles(ctx.memoryFiles);
+              setAgents(ctx.agents);
+            } catch (error) {
+              console.error('Failed to reload context after agent toggle:', error);
+            }
+          };
+          reloadContext();
+        });
       }
       return;
     }
@@ -389,15 +499,60 @@ export const App: React.FC<AppProps> = ({ projectDir = process.cwd(), noClaudeMd
   if (!context) return null;
 
   const stats = computeStats(context);
+  const contextStats = calculateContextStats(context); // T037: Calculate context stats for summary
 
   return (
     <Box flexDirection="column" padding={1}>
+      {/* T015/T017: Memory migration prompt (shows before main UI if needed) */}
+      {showMemoryMigration && memoryMigration.state === 'prompt' && (
+        <Box marginBottom={1}>
+          <MemoryMigrationPrompt
+            filesToMigrate={memoryMigration.filesToMigrate}
+            isProcessing={memoryMigration.isProcessing}
+            onConfirm={() => memoryMigration.confirmMigration(projectDir)}
+            onSkip={() => {
+              memoryMigration.skipMigration(false);
+              setShowMemoryMigration(false);
+            }}
+            onNeverAsk={() => {
+              memoryMigration.skipMigration(true);
+              setShowMemoryMigration(false);
+            }}
+          />
+        </Box>
+      )}
+
+      {/* T016: Memory migration status (shows during/after migration) */}
+      {showMemoryMigration && (
+        memoryMigration.state === 'migrating' ||
+        memoryMigration.state === 'complete' ||
+        memoryMigration.state === 'error' ||
+        memoryMigration.state === 'skipped'
+      ) && (
+        <Box marginBottom={1}>
+          <MemoryMigrationStatus
+            state={memoryMigration.state}
+            result={memoryMigration.result}
+            error={memoryMigration.error}
+            onClose={() => {
+              setShowMemoryMigration(false);
+              memoryMigration.resetMigration();
+            }}
+          />
+        </Box>
+      )}
+
       <StatusBar
         stats={stats}
         projectPath={context.projectPath}
         hasUnsavedChanges={hasUnsavedChanges}
         hasWritePermission={context.hasWritePermission}
       />
+
+      {/* T037: Context Summary - unified overview of all context sources */}
+      <Box marginTop={1}>
+        <ContextSummary stats={contextStats} />
+      </Box>
 
       <Box marginTop={1} flexDirection="column">
         <ServerList
@@ -408,9 +563,19 @@ export const App: React.FC<AppProps> = ({ projectDir = process.cwd(), noClaudeMd
 
         <Box marginTop={1}>
           <MemoryList
+            migratedFiles={memoryMigration.result?.migratedFiles || []}
             files={memoryFiles}
             selectedIndex={memoryIndex}
             isFocused={focusPanel === 'memory'}
+          />
+        </Box>
+
+        <Box marginTop={1}>
+          <AgentList
+            agents={agents}
+            selectedIndex={agentHook.selectedIndex}
+            isFocused={focusPanel === 'agents'}
+            expandedIndexes={agentHook.expandedIndexes}
           />
         </Box>
       </Box>
