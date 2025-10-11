@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.2] - 2025-10-11
+
+### Fixed
+
+- **Critical Bug**: Fixed viewport calculation causing missing items in unified list
+  - Section headers with `marginY={1}` now correctly counted as 3 lines (top margin + content + bottom margin)
+  - First section header with `marginBottom={1}` correctly counted as 2 lines
+  - Implemented backwards-building algorithm for end-of-list scrolling to ensure last items always visible
+  - Added iterative adjustment logic for middle scrolling to guarantee selected item inclusion
+  - Fixed total available lines calculation: `height - 5` (borders + title + scroll indicator text + scroll indicator margin)
+  - All MCP servers, memory files, and subagents now display correctly across all window sizes
+  - Tested and verified with multiple terminal dimensions
+
+### Changed
+
+- **Visual Enhancements** - Improved readability and user experience
+  - Token estimates now display in cyan/bold color to "pop" from other text
+  - Navigation key names highlighted in cyan/bold (Enter, Q, Tab, Space, ↑/↓) while descriptions remain dimmed
+  - Selection highlight improved with black text on cyan background for better contrast
+
+### Technical Details
+
+#### Viewport Calculation Fix
+- `buildVisibleItems()` - Correctly accounts for 3-line section headers
+- `buildVisibleItemsFromEnd()` - Works backwards from last item to ensure end-of-list items always visible
+- Middle scrolling - Iterative adjustment to guarantee selected item inclusion
+- Tested extensively across multiple window sizes and list positions
+
 ## [0.4.1] - 2025-10-10
 
 ### Fixed

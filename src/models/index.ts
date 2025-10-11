@@ -9,3 +9,4 @@ export * from './config-source';
 export * from './blocked-item';
 export * from './project-context';
 export * from './types';
+export * from './unified-item';
