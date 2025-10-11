@@ -105,7 +105,8 @@ describe('Atomic Write Pattern', () => {
 
   describe('Restore on Failure', () => {
     it('should restore from backup if write fails', async () => {
-      const configPath = path.join(testDir, '.mcp.json');
+      // configPath is not used in this test, but kept for reference
+      // const _configPath = path.join(testDir, '.mcp.json');
 
       // Write original config
       const originalConfig: McpJsonConfig = {

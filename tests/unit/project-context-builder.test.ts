@@ -3,12 +3,13 @@ import { computeStats } from '../../src/models/project-context';
 import { createTempDir, cleanupTempDir, createMockMemoryFiles } from '../helpers/test-utils';
 import * as fs from 'fs-extra';
 import * as path from 'path';
-import * as os from 'os';
 
 // Mock os.homedir to use test directory
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const osActual = require('os');
 jest.mock('os', () => ({
   ...jest.requireActual('os'),
-  homedir: jest.fn(() => require('os').tmpdir()),
+  homedir: jest.fn(() => osActual.tmpdir()),
 }));
 
 // Inline v2.0.0 helper functions to avoid module loading issues
@@ -198,7 +199,8 @@ describe('project-context-builder', () => {
 
     it('should handle empty project (no project-scoped servers, no memory files)', async () => {
       const context = await buildProjectContext(tempDir);
-      const stats = computeStats(context);
+      // stats is computed but not used in this specific test
+      // const _stats = computeStats(context);
 
       // Empty project should have no project-scoped items, but may have inherited items
       const projectServers = context.mcpServers.filter(s => s.hierarchyLevel === 1);

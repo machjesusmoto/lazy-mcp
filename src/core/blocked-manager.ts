@@ -10,7 +10,6 @@ import {
   writeMcpJson,
   isBlockedServer,
   createDummyOverride,
-  extractOriginalConfig,
   ensureMcpJson,
 } from '../utils/mcp-json-utils';
 import type { UnblockResult, MigrationResult } from '../models/types';

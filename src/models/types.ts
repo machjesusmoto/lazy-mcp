@@ -250,6 +250,7 @@ export interface MigrationOperation {
   state: MigrationState;
 
   /** Servers selected for migration (hierarchyLevel === 1 only) */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dynamic server structure from TUI, will be typed in future
   selectedServers: any[]; // TODO: Replace 'any' with MCPServer type from project-context-builder
 
   /** Detected conflicts requiring resolution (empty if none) */
@@ -439,6 +440,7 @@ export function validateMigrationOperation(
 
   // Validate all selected servers are project-local (hierarchyLevel === 1)
   const invalidServers = operation.selectedServers.filter(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dynamic server structure from TUI
     (server: any) => server.hierarchyLevel !== MIGRATION_VALIDATION.REQUIRED_HIERARCHY_LEVEL
   );
   if (invalidServers.length > 0) {

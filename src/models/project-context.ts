@@ -132,6 +132,7 @@ export function estimateContextSize(context: ProjectContext): string {
   // Memory files: sum actual file sizes
   for (const memory of context.memoryFiles) {
     // MemoryFile should have size property, use 0 if not available
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Safe fallback for optional size property
     totalBytes += (memory as any).size || 0;
   }
 

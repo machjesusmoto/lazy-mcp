@@ -66,8 +66,8 @@ describe('config-loader', () => {
       expect(projectServers.find(s => s.name === 'project-server')?.command).toBe('project-cmd');
 
       // May also have user global servers (hierarchyLevel 2)
-      const userServers = servers.filter(s => s.hierarchyLevel === 2);
-      // We don't check count as it depends on user's ~/.claude.json
+      // Note: userServers count depends on user's ~/.claude.json, so we don't check it
+      // const userServers = servers.filter(s => s.hierarchyLevel === 2);
     });
 
     it('should respect precedence: local > project > user', async () => {

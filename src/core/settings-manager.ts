@@ -8,7 +8,6 @@
  */
 
 import * as path from 'path';
-import * as fs from 'fs-extra';
 import type { SettingsJson, DenyPattern } from '../models/settings-types';
 import { atomicWrite, safeRead } from '../utils/file-utils';
 import { withFileLock } from '../utils/file-lock';

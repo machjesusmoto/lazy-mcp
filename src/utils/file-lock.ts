@@ -23,6 +23,7 @@ async function acquireLock(filePath: string): Promise<string> {
   // Ensure parent directory exists
   await fs.ensureDir(path.dirname(lockPath));
 
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     try {
       // Try to create lock file exclusively

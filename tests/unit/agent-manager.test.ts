@@ -20,22 +20,25 @@ import {
 import type { SubAgent } from '../../src/models/types';
 
 // Mock os.homedir at module level with default return value
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const osActual = require('os');
 jest.mock('os', () => ({
   ...jest.requireActual('os'),
-  homedir: jest.fn(() => require('os').tmpdir()),
+  homedir: jest.fn(() => osActual.tmpdir()),
 }));
 
 describe('Agent Manager - US2 Agent Discovery', () => {
   let testDir: string;
   let projectAgentsDir: string;
-  let userAgentsDir: string;
+  // userAgentsDir is defined but not used in current tests
+  // let _userAgentsDir: string;
 
   beforeEach(async () => {
     testDir = path.join(os.tmpdir(), `mcp-toggle-agents-${Date.now()}`);
     await fs.ensureDir(testDir);
 
     projectAgentsDir = path.join(testDir, '.claude', 'agents');
-    userAgentsDir = path.join(os.homedir(), '.claude', 'agents');
+    // _userAgentsDir = path.join(os.homedir(), '.claude', 'agents');
 
     await fs.ensureDir(projectAgentsDir);
   });

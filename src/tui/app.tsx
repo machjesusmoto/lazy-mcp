@@ -191,6 +191,7 @@ export const App: React.FC<AppProps> = ({ projectDir = process.cwd(), noClaudeMd
                 await blockLocalServer(projectDir, server.name);
               }
             } else {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Metadata fields not in MCPServer interface
               const isBlockedOverride = (originalServer as any)._mcpToggleBlocked === true;
               if (isBlockedOverride) {
                 await unblockInheritedServer(projectDir, server.name);

@@ -16,7 +16,7 @@ import {
   removeDenyPattern,
   isDenied,
 } from '../../src/core/settings-manager';
-import type { SettingsJson, PermissionsConfig } from '../../src/models/settings-types';
+import type { SettingsJson } from '../../src/models/settings-types';
 
 describe('settings-manager', () => {
   let testDir: string;

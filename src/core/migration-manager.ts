@@ -9,11 +9,15 @@ import type {
   MigrationOperation,
   ConflictResolution,
   BackupPaths,
-  ServerMigrationResult,
-  ResolutionType,
-  MCPServerConfig,
   MemoryMigrationResult,
 } from '../models/types';
+import * as fs from 'fs-extra';
+import * as path from 'path';
+import * as os from 'os';
+import * as fg from 'fast-glob';
+import { atomicWrite } from '../utils/file-utils';
+import { blockMemoryFile } from './memory-blocker';
+import { isValidServerName } from '../models/types';
 
 /**
  * Initiate migration operation
@@ -27,12 +31,9 @@ import type {
  */
 export async function initiateMigration(
   projectDir: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Selected servers come from TUI with dynamic structure
   selectedServers: any[] // TODO: Replace with MCPServer type
 ): Promise<MigrationOperation> {
-  const fs = require('fs-extra');
-  const path = require('path');
-  const os = require('os');
-
   // Validation
   if (!projectDir || projectDir.trim().length === 0) {
     throw new Error('Invalid projectDir: must be non-empty string');
@@ -44,6 +45,7 @@ export async function initiateMigration(
 
   // Validate all selected servers are project-local (hierarchyLevel === 1)
   const invalidServers = selectedServers.filter(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dynamic server structure from TUI
     (server: any) => server.hierarchyLevel !== 1
   );
   if (invalidServers.length > 0) {
@@ -63,6 +65,7 @@ export async function initiateMigration(
   try {
     // Load global configuration
     const globalConfigPath = path.join(os.homedir(), '.claude.json');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- JSON config structure is dynamic
     let globalConfig: any = { mcpServers: {} };
 
     if (await fs.pathExists(globalConfigPath)) {
@@ -93,7 +96,9 @@ export async function initiateMigration(
  * @returns Array of conflicts requiring resolution (empty if none)
  */
 export function detectConflicts(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dynamic server list from TUI, will be typed in future
   projectServers: any[], // TODO: Replace with MCPServer type
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- JSON config structure is dynamic
   globalConfig: any
 ): ConflictResolution[] {
   const conflicts: ConflictResolution[] = [];
@@ -152,6 +157,8 @@ export function detectConflicts(
  * Performs backup, writes both config files, verifies, and cleans up
  * or rolls back on failure.
  *
+ * Note: Uses `any` for config structures due to dynamic JSON format
+ *
  * @param operation - MigrationOperation in 'ready' state
  * @returns Updated operation with state 'complete' or 'error'
  * @throws Error if operation not in 'ready' state
@@ -159,11 +166,6 @@ export function detectConflicts(
 export async function executeMigration(
   operation: MigrationOperation
 ): Promise<MigrationOperation> {
-  const fs = require('fs-extra');
-  const path = require('path');
-  const os = require('os');
-  const { atomicWrite } = require('../utils/file-utils');
-
   if (operation.state !== 'ready') {
     throw new Error(`Cannot execute migration: operation state is '${operation.state}', expected 'ready'`);
   }
@@ -189,7 +191,9 @@ export async function executeMigration(
     const projectConfigPath = path.join(operation.projectDir, '.mcp.json');
     const globalConfigPath = path.join(os.homedir(), '.claude.json');
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- JSON config structure is dynamic
     let projectConfig: any = { mcpServers: {} };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- JSON config structure is dynamic
     let globalConfig: any = { mcpServers: {} };
 
     if (await fs.pathExists(projectConfigPath)) {
@@ -270,6 +274,7 @@ export async function executeMigration(
         serverName: 'migration',
         phase: 'write',
         message: (error as Error).message,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Error objects have optional code property
         code: (error as any).code,
       }],
       backupsRetained: !!updatedOperation.backupPaths,
@@ -292,10 +297,6 @@ export async function executeMigration(
 export async function createBackups(
   projectDir: string
 ): Promise<BackupPaths> {
-  const fs = require('fs-extra');
-  const path = require('path');
-  const os = require('os');
-
   const projectConfigPath = path.join(projectDir, '.mcp.json');
   const globalConfigPath = path.join(os.homedir(), '.claude.json');
   const timestamp = Date.now();
@@ -347,9 +348,6 @@ export async function createBackups(
 export async function rollbackMigration(
   backupPaths: BackupPaths
 ): Promise<void> {
-  const fs = require('fs-extra');
-  const path = require('path');
-
   const { projectBackup, globalBackup } = backupPaths;
 
   // Extract original paths from backup paths
@@ -382,9 +380,6 @@ export async function rollbackMigration(
 export function validateResolutions(
   conflicts: ConflictResolution[]
 ): boolean {
-  // Import validation function
-  const { isValidServerName } = require('../models/types');
-
   for (const conflict of conflicts) {
     // Validate resolution type
     if (!['skip', 'overwrite', 'rename'].includes(conflict.resolution)) {
@@ -412,14 +407,19 @@ export function validateResolutions(
  * Transforms server list based on user's resolution choices
  * (removes skipped servers, renames renamed servers, etc.)
  *
+ * Note: Uses `any` for server structures due to dynamic format from TUI
+ *
  * @param servers - Original server list
  * @param conflicts - Resolved conflicts
  * @returns Transformed server list ready for migration
  */
 export function applyResolutions(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dynamic server list from TUI, will be typed in future
   servers: any[], // TODO: Replace with MCPServer type
   conflicts: ConflictResolution[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Returns same dynamic format as input
 ): any[] { // TODO: Replace with MCPServer type
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Dynamic server list structure
   const result: any[] = [];
 
   for (const server of servers) {
@@ -472,10 +472,6 @@ export function applyResolutions(
  * @returns Array of original filenames (without .blocked extension)
  */
 export async function detectOldBlockedFiles(projectDir: string): Promise<string[]> {
-  const fs = require('fs-extra');
-  const path = require('path');
-  const fg = require('fast-glob');
-
   const claudeDir = path.join(projectDir, '.claude');
 
   // Check if .claude directory exists
@@ -518,10 +514,6 @@ export async function detectOldBlockedFiles(projectDir: string): Promise<string[
  * @returns Migration result with summary
  */
 export async function migrateBlockedFiles(projectDir: string): Promise<MemoryMigrationResult> {
-  const fs = require('fs-extra');
-  const path = require('path');
-  const { blockMemoryFile } = require('./memory-blocker');
-
   const migratedFiles: string[] = [];
   const failedFiles: { file: string; error: string }[] = [];
 

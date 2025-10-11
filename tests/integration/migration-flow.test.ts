@@ -8,21 +8,19 @@
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as os from 'os';
-import {
-  initiateMigration,
-  executeMigration,
-  validateResolutions,
-} from '../../src/core/migration-manager';
-import type {
-  MigrationOperation,
-  ConflictResolution,
-} from '../../src/models/types';
+// These will be used when tests are implemented (T017)
+// import { validateResolutions } from '../../src/core/migration-manager';
+// import type {
+//   MigrationOperation,
+//   ConflictResolution,
+// } from '../../src/models/types';
 
 describe('Migration Flow Integration Tests', () => {
   let testDir: string;
   let projectDir: string;
-  let globalConfigPath: string;
-  let projectConfigPath: string;
+  // These will be used when tests are implemented (T017)
+  // let globalConfigPath: string;
+  // let projectConfigPath: string;
 
   beforeEach(async () => {
     // Create temporary test directory
@@ -34,8 +32,9 @@ describe('Migration Flow Integration Tests', () => {
 
     // Note: For integration tests, we'll manually specify paths instead of using os.homedir()
     // This avoids the complexity of mocking system functions
-    globalConfigPath = path.join(testDir, '.claude.json');
-    projectConfigPath = path.join(projectDir, '.mcp.json');
+    // These will be used when tests are implemented (T017)
+    // globalConfigPath = path.join(testDir, '.claude.json');
+    // projectConfigPath = path.join(projectDir, '.mcp.json');
   });
 
   afterEach(async () => {

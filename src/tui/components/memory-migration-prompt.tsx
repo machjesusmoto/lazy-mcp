@@ -40,9 +40,9 @@ export interface MemoryMigrationPromptProps {
 export const MemoryMigrationPrompt: React.FC<MemoryMigrationPromptProps> = ({
   filesToMigrate,
   isProcessing,
-  onConfirm,
-  onSkip,
-  onNeverAsk,
+  onConfirm: _onConfirm,
+  onSkip: _onSkip,
+  onNeverAsk: _onNeverAsk,
 }) => {
   return (
     <Box

@@ -40,7 +40,7 @@ export const MemoryMigrationStatus: React.FC<MemoryMigrationStatusProps> = ({
   state,
   result,
   error,
-  onClose,
+  onClose: _onClose,
 }) => {
   // Migrating state
   if (state === 'migrating') {

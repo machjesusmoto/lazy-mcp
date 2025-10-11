@@ -19,6 +19,7 @@ import * as yaml from 'js-yaml';
  * @param content - Markdown file content
  * @returns Parsed frontmatter object or undefined if no frontmatter found
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- YAML frontmatter structure is dynamic
 export function parseFrontmatter(content: string): { frontmatter: any; body: string } | null {
   // Check if content starts with frontmatter delimiter
   if (!content.trimStart().startsWith('---')) {
@@ -94,8 +95,10 @@ export function parseFrontmatter(content: string): { frontmatter: any; body: str
  * @param yamlContent - YAML content between delimiters
  * @returns Parsed object or null if parsing fails
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- YAML structure is dynamic by nature
 function parseSimpleFrontmatter(yamlContent: string): Record<string, any> | null {
   const lines = yamlContent.split('\n');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- YAML structure is dynamic by nature
   const result: Record<string, any> = {};
   let currentKey: string | null = null;
   let currentValue: string[] = [];

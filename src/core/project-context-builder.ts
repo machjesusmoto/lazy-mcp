@@ -9,7 +9,6 @@ import { ProjectContext, ConfigSource } from '../models';
 import { loadMCPServers } from './config-loader';
 import { loadMemoryFiles } from './memory-loader';
 import { getHierarchyLevel } from '../utils/path-utils';
-import { isBlockedServer } from '../utils/mcp-json-utils';
 import type { BlockedItemSummary } from '../models/types';
 
 /**
@@ -56,6 +55,7 @@ export async function buildProjectContext(projectDir: string): Promise<ProjectCo
   // Apply blocked state to servers by checking for dummy echo overrides
   for (const server of mcpServers) {
     // Check if server has blocking metadata (command="echo" with _mcpToggleBlocked)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Metadata fields not in MCPServer interface
     const serverAsAny = server as any;
     if (server.command === 'echo' && serverAsAny._mcpToggleBlocked === true) {
       server.isBlocked = true;

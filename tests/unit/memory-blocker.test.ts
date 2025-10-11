@@ -81,6 +81,7 @@ describe('memory-blocker', () => {
 
       expect(settings.permissions.deny).toHaveLength(3);
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- JSON structure from file is dynamic
       const patterns = settings.permissions.deny.map((d: any) => d.pattern);
       expect(patterns).toContain('memory1.md');
       expect(patterns).toContain('memory2.md');

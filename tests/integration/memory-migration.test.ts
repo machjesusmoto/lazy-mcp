@@ -15,7 +15,12 @@ import {
   detectOldBlockedFiles,
   migrateBlockedFiles,
 } from '../../src/core/migration-manager';
-import { isMemoryBlocked, listBlockedMemories } from '../../src/core/memory-blocker';
+import {
+  isMemoryBlocked,
+  listBlockedMemories,
+  unblockMemoryFile,
+  blockMemoryFile,
+} from '../../src/core/memory-blocker';
 import { loadSettings } from '../../src/core/settings-manager';
 
 describe('Memory Migration Integration', () => {
@@ -279,7 +284,6 @@ describe('Memory Migration Integration', () => {
       expect(await isMemoryBlocked(testDir, 'memory.md')).toBe(true);
 
       // Unblock using new system
-      const { unblockMemoryFile } = require('../../src/core/memory-blocker');
       await unblockMemoryFile(testDir, 'memory.md');
 
       // Verify unblocked
@@ -292,7 +296,6 @@ describe('Memory Migration Integration', () => {
       await migrateBlockedFiles(testDir);
 
       // Unblock
-      const { unblockMemoryFile, blockMemoryFile } = require('../../src/core/memory-blocker');
       await unblockMemoryFile(testDir, 'memory.md');
       expect(await isMemoryBlocked(testDir, 'memory.md')).toBe(false);
 

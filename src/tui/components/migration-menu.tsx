@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { Box, Text } from 'ink';
-import type { MigrationOperation, ConflictResolution } from '../../models/types';
+import type { MigrationOperation } from '../../models/types';
 
 export interface MigrationMenuProps {
   operation: MigrationOperation;
@@ -23,7 +23,7 @@ export interface MigrationMenuProps {
 export const MigrationMenu: React.FC<MigrationMenuProps> = ({
   operation,
   selectedConflictIndex = 0,
-  onClose,
+  onClose: _onClose,
 }) => {
   const { state, selectedServers, conflicts, result } = operation;
 
