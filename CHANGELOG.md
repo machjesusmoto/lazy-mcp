@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2025-10-12
+
+### Fixed
+
+- **npm Package Documentation** - Include `docs/` directory in published npm package
+  - Fixed broken documentation links on npm package page
+  - Migration guide, API docs, and developer guide now accessible from npm
+  - Documentation links in README now work correctly for npm users
+
 ## [0.5.0] - 2025-10-11
 
 ### Production Release
