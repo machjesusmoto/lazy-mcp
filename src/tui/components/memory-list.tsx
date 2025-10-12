@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import type { MemoryFile } from '../../models';
+import { formatTokenCount } from '../../utils/token-estimator';
 
 export interface MemoryListProps {
   /**
@@ -17,6 +18,11 @@ export interface MemoryListProps {
    * Whether this list is currently focused for keyboard input
    */
   isFocused?: boolean;
+
+  /**
+   * List of files that were just migrated (for T018 - migration indicators)
+   */
+  migratedFiles?: string[];
 }
 
 /**
@@ -28,11 +34,13 @@ export interface MemoryListProps {
  * - Blocked status
  * - Content preview on selection
  * - Selection indicator when focused
+ * - Migration indicator (T018)
  */
 export const MemoryList: React.FC<MemoryListProps> = ({
   files,
   selectedIndex = -1,
   isFocused = false,
+  migratedFiles = [],
 }) => {
   if (files.length === 0) {
     return (
@@ -52,6 +60,12 @@ export const MemoryList: React.FC<MemoryListProps> = ({
     ? files[selectedIndex]
     : null;
 
+  // Check if a file was recently migrated (T018)
+  const wasMigrated = (file: MemoryFile): boolean => {
+    const fileName = file.relativePath || file.name;
+    return migratedFiles.includes(fileName);
+  };
+
   return (
     <Box flexDirection="column">
       <Box paddingLeft={1} paddingY={1}>
@@ -62,6 +76,7 @@ export const MemoryList: React.FC<MemoryListProps> = ({
         const isSelected = isFocused && index === selectedIndex;
         const prefix = isSelected ? '> ' : '  ';
         const displayPath = file.relativePath || file.name;
+        const migrated = wasMigrated(file);
 
         return (
           <Box key={file.path} paddingLeft={1}>
@@ -77,9 +92,19 @@ export const MemoryList: React.FC<MemoryListProps> = ({
               <Text dimColor>({formatSize(file.size)})</Text>
               {' '}
               {file.isSymlink && <Text dimColor>→ symlink </Text>}
+              {/* T018: Migration indicator */}
+              {migrated && (
+                <Text color="cyan" dimColor> [migrated] </Text>
+              )}
               <Text dimColor italic>
                 [{file.hierarchyLevel === 0 ? 'project' : 'global'}]
               </Text>
+              {file.estimatedTokens && file.estimatedTokens > 0 && (
+                <>
+                  {' '}
+                  <Text color="cyan">{formatTokenCount(file.estimatedTokens)} tokens</Text>
+                </>
+              )}
             </Text>
           </Box>
         );
@@ -96,14 +121,6 @@ export const MemoryList: React.FC<MemoryListProps> = ({
         >
           <Text dimColor>Content Preview:</Text>
           <Text>{selectedFile.contentPreview}</Text>
-        </Box>
-      )}
-
-      {isFocused && files.length > 0 && (
-        <Box paddingLeft={2}>
-          <Text dimColor>
-            ↑/↓: Navigate • Space: Toggle • Enter: Save • Q: Quit
-          </Text>
         </Box>
       )}
     </Box>

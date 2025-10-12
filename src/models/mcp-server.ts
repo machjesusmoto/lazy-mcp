@@ -29,6 +29,9 @@ export interface MCPServer {
 
   /** Timestamp when blocked (if isBlocked = true) */
   blockedAt?: Date;
+
+  /** Estimated token count for this server's configuration */
+  estimatedTokens?: number;
 }
 
 /**

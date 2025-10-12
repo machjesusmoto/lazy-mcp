@@ -37,6 +37,9 @@ export interface MemoryFile {
 
   /** Timestamp when blocked (if isBlocked = true) */
   blockedAt?: Date;
+
+  /** Estimated token count for this memory file's content */
+  estimatedTokens?: number;
 }
 
 /**

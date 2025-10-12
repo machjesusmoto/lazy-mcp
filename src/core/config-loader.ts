@@ -14,6 +14,7 @@ import * as os from 'os';
 import * as fs from 'fs-extra';
 import { MCPServer } from '../models';
 import { safeReadJSON } from '../utils/json-parser';
+import { estimateJsonTokens } from '../utils/token-estimator';
 
 /**
  * Load all MCP servers from the 3-scope hierarchy.
@@ -40,6 +41,7 @@ export async function loadMCPServers(projectDir: string): Promise<MCPServer[]> {
   if (await fs.pathExists(userConfigPath)) {
     const userConfig = await safeReadJSON(userConfigPath);
     if (userConfig?.projects && typeof userConfig.projects === 'object') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- JSON config structure is dynamic
       const projectConfig = (userConfig.projects as Record<string, any>)[projectDir];
       if (projectConfig?.mcpServers && typeof projectConfig.mcpServers === 'object') {
         for (const [name, serverConfig] of Object.entries(projectConfig.mcpServers)) {
@@ -54,12 +56,17 @@ export async function loadMCPServers(projectDir: string): Promise<MCPServer[]> {
               sourceType: 'local',
               hierarchyLevel: 0,
               isBlocked: false,
+              estimatedTokens: estimateJsonTokens(server),
             };
 
             // Preserve v2.0.0 blocking metadata
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Metadata fields not in MCPServer interface
             if (server._mcpToggleBlocked) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Metadata fields not in MCPServer interface
               (mcpServer as any)._mcpToggleBlocked = server._mcpToggleBlocked;
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Metadata fields not in MCPServer interface
               (mcpServer as any)._mcpToggleBlockedAt = server._mcpToggleBlockedAt;
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Metadata fields not in MCPServer interface
               (mcpServer as any)._mcpToggleOriginal = server._mcpToggleOriginal;
             }
 
@@ -87,12 +94,17 @@ export async function loadMCPServers(projectDir: string): Promise<MCPServer[]> {
             sourceType: 'inherited',
             hierarchyLevel: 1,
             isBlocked: false,
+            estimatedTokens: estimateJsonTokens(server),
           };
 
           // Preserve v2.0.0 blocking metadata
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Metadata fields not in MCPServer interface
           if (server._mcpToggleBlocked) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Metadata fields not in MCPServer interface
             (mcpServer as any)._mcpToggleBlocked = server._mcpToggleBlocked;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Metadata fields not in MCPServer interface
             (mcpServer as any)._mcpToggleBlockedAt = server._mcpToggleBlockedAt;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Metadata fields not in MCPServer interface
             (mcpServer as any)._mcpToggleOriginal = server._mcpToggleOriginal;
           }
 
@@ -118,12 +130,17 @@ export async function loadMCPServers(projectDir: string): Promise<MCPServer[]> {
             sourceType: 'inherited',
             hierarchyLevel: 2,
             isBlocked: false,
+            estimatedTokens: estimateJsonTokens(server),
           };
 
           // Preserve v2.0.0 blocking metadata
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Metadata fields not in MCPServer interface
           if (server._mcpToggleBlocked) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Metadata fields not in MCPServer interface
             (mcpServer as any)._mcpToggleBlocked = server._mcpToggleBlocked;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Metadata fields not in MCPServer interface
             (mcpServer as any)._mcpToggleBlockedAt = server._mcpToggleBlockedAt;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Metadata fields not in MCPServer interface
             (mcpServer as any)._mcpToggleOriginal = server._mcpToggleOriginal;
           }
 

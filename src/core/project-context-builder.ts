@@ -9,7 +9,6 @@ import { ProjectContext, ConfigSource } from '../models';
 import { loadMCPServers } from './config-loader';
 import { loadMemoryFiles } from './memory-loader';
 import { getHierarchyLevel } from '../utils/path-utils';
-import { isBlockedServer } from '../utils/mcp-json-utils';
 import type { BlockedItemSummary } from '../models/types';
 
 /**
@@ -36,20 +35,27 @@ export async function buildProjectContext(projectDir: string): Promise<ProjectCo
     console.error('[DEBUG] Starting project context enumeration...');
   }
 
+  // Import agent functions
+  const { discoverAgents, checkAgentBlockedStatus } = await import('./agent-manager');
+
   // Load all data sources in parallel
-  const [mcpServers, memoryFiles] = await Promise.all([
+  const [mcpServers, memoryFiles, agents] = await Promise.all([
     loadMCPServers(projectDir),
     loadMemoryFiles(projectDir),
+    discoverAgents(projectDir).then(discoveredAgents =>
+      checkAgentBlockedStatus(projectDir, discoveredAgents)
+    ),
   ]);
 
   if (debug) {
-    console.error(`[DEBUG] Loaded ${mcpServers.length} MCP servers, ${memoryFiles.length} memory files`);
+    console.error(`[DEBUG] Loaded ${mcpServers.length} MCP servers, ${memoryFiles.length} memory files, ${agents.length} agents`);
   }
 
   // In v2.0.0, blocked state is detected directly from .mcp.json and .md.blocked files
   // Apply blocked state to servers by checking for dummy echo overrides
   for (const server of mcpServers) {
     // Check if server has blocking metadata (command="echo" with _mcpToggleBlocked)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Metadata fields not in MCPServer interface
     const serverAsAny = server as any;
     if (server.command === 'echo' && serverAsAny._mcpToggleBlocked === true) {
       server.isBlocked = true;
@@ -161,6 +167,7 @@ export async function buildProjectContext(projectDir: string): Promise<ProjectCo
     projectPath: projectDir,
     mcpServers,
     memoryFiles,
+    agents,
     configSources,
     blockedItems,
     claudeDotClaudePath: (await fs.pathExists(claudeDir)) ? claudeDir : undefined,

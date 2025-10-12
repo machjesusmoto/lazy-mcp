@@ -1,12 +1,24 @@
 /**
  * Memory file loader using Claude Code's 2-scope hierarchy.
  *
+ * IMPORTANT: This loader specifically handles Claude Code memory files, NOT Serena memories.
+ *
+ * Directory Structure:
+ * - Claude Code memories: .claude/memories/*.md
+ * - Serena memories: .serena/memories/*.md (NOT loaded by this tool)
+ *
  * Scopes:
  * 1. Project (local): <project>/.claude/memories/
  * 2. User (global): ~/.claude/memories/
  *
  * Note: There is no "shared" scope for memory files - they are either
  * project-specific or user-global.
+ *
+ * Serena Memory System:
+ * - Serena uses its own memory system in .serena/memories/
+ * - Serena memories are managed via the Serena MCP server tools (write_memory, read_memory, etc.)
+ * - This loader does NOT scan or load Serena memories
+ * - Serena memories contain architectural knowledge managed by the Serena agent
  */
 
 import * as path from 'path';
@@ -14,6 +26,7 @@ import * as os from 'os';
 import * as fs from 'fs-extra';
 import glob from 'fast-glob';
 import { MemoryFile } from '../models';
+import { estimateMarkdownTokens } from '../utils/token-estimator';
 
 /**
  * Load all memory files from the 2-scope hierarchy.
@@ -85,10 +98,11 @@ export async function loadMemoryFiles(projectDir: string): Promise<MemoryFile[]>
         }
       }
 
-      // Get content preview (first 200 characters)
+      // Get content preview (first 200 characters) and estimate tokens
       try {
         const content = await fs.readFile(absolutePath, 'utf-8');
         memoryFile.contentPreview = content.substring(0, 200);
+        memoryFile.estimatedTokens = estimateMarkdownTokens(content);
       } catch {
         // Ignore errors reading content
       }

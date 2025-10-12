@@ -1,6 +1,6 @@
 {
   "name": "mcp-toggle",
-  "version": "0.3.0",
+  "version": "0.4.2",
   "description": "CLI tool to manage Claude Code MCP servers and memory files",
   "main": "dist/cli.js",
   "bin": {
@@ -48,11 +48,13 @@
     "fast-glob": "^3.3.2",
     "fs-extra": "^11.2.0",
     "ink": "^3.2.0",
+    "js-yaml": "^4.1.0",
     "react": "^17.0.2"
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
     "@types/jest": "^30.0.0",
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.14.0",
     "@types/react": "^17.0.89",
     "@typescript-eslint/eslint-plugin": "^7.13.1",

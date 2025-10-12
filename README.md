@@ -4,18 +4,29 @@
 [![CI](https://github.com/machjesusmoto/mcp-toggle/actions/workflows/ci.yml/badge.svg)](https://github.com/machjesusmoto/mcp-toggle/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A command-line tool to manage Claude Code MCP servers and memory files.
+A comprehensive command-line tool to manage Claude Code's complete context: MCP servers, memory files, and agents.
 
 ## Overview
 
-MCP Toggle allows you to view and selectively disable MCP (Model Context Protocol) servers and Claude Code memory files for your project. It enumerates both local and inherited configurations, provides an interactive TUI interface for toggling items on/off, and automatically integrates with Claude Code.
+MCP Toggle is the definitive context management tool for Claude Code projects. It provides visibility and control over all context sources that Claude loads, allowing you to optimize your project's AI context with precision.
+
+**What It Manages**:
+- **MCP Servers**: Block/unblock Model Context Protocol servers per project
+- **Memory Files**: Control which memory files Claude loads (project + user scopes)
+- **Agents**: Discover and manage subagents from project and user levels
+- **Context Overview**: See everything Claude knows about your project in one view
 
 ## Features
 
-- 🔍 **Enumerate**: View all MCP servers and memory files (local + inherited)
-- 🎛️ **Toggle**: Selectively enable/disable MCPs and memory files
-- 💾 **Persist**: Changes saved to `.claude/blocked.md`
-- 🔗 **Integrate**: Automatic `claude.md` integration for Claude Code
+### Core Capabilities
+
+- 🔍 **Enumerate**: View all MCP servers, memory files, and agents (local + inherited)
+- 🎛️ **Toggle**: Selectively enable/disable any context item with a single keystroke
+- 🔒 **Native Blocking**: Uses Claude Code's `permissions.deny` mechanism (guaranteed to work)
+- 👥 **Agent Management**: Discover, view, and block agents from project and user directories
+- 📊 **Context Overview**: Unified view of all context sources with statistics
+- 💾 **Persist**: Changes saved to `.claude/settings.json`
+- 🔗 **Integrate**: Automatic Claude Code integration
 
 ## Installation
 
@@ -57,19 +68,88 @@ mcp-toggle --no-claude-md
 
 ### Keyboard Controls
 
-- **↑/↓** or **k/j** - Navigate up/down
-- **Tab** - Switch between MCP Servers and Memory Files panels
-- **Space** - Toggle selected item on/off
-- **Enter** - Save changes to `.claude/blocked.md`
+- **↑/↓** or **k/j** - Navigate up/down within current panel
+- **Tab** - Switch between panels (Servers → Memory → Agents → Summary)
+- **Space** - Toggle selected item blocked/unblocked
+- **Enter** - Save changes to `.claude/settings.json`
 - **q** or **Esc** - Quit without saving
+
+### TUI Layout
+
+```
+┌─ Context Summary ──────────────────────────────────┐
+│ MCP Servers: 4 active, 1 blocked                   │
+│ Memory Files: 8 loaded, 2 blocked                  │
+│ Agents: 12 available (7 project, 5 user)           │
+│ Est. Context: ~45KB                                │
+└────────────────────────────────────────────────────┘
+
+┌─ MCP Servers ──────────────────────────────────────┐
+│ ✓ filesystem            (Local)                    │
+│ ✓ sequential-thinking   (Inherited)                │
+│ ✗ experimental-mcp      (Blocked)                  │
+└────────────────────────────────────────────────────┘
+
+┌─ Memory Files ─────────────────────────────────────┐
+│ ✓ project-notes.md      (Local)                    │
+│ ✓ coding-standards.md   (Inherited)                │
+│ ✗ temporary-notes.md    (Blocked)                  │
+└────────────────────────────────────────────────────┘
+
+┌─ Agents ───────────────────────────────────────────┐
+│ [P] ✓ rapid-prototyper     Quick MVP creation      │
+│ [U] ✓ test-writer          Test automation         │
+│ [O] ✓ frontend-dev         UI implementation       │
+│ [P] ✗ experimental-agent   (Blocked)                │
+└────────────────────────────────────────────────────┘
+
+Legend: [P]=Project [U]=User [O]=Override ✓=Active ✗=Blocked
+```
 
 ## How It Works
 
-1. **Enumeration**: Scans current directory up to home directory for `.claude.json` files and `.claude/memories/` directories
-2. **Display**: Shows all discovered MCPs and memory files with source annotations (Local, Parent, Home)
-3. **Toggle**: Allows you to disable any item with a single keypress (Space)
-4. **Persistence**: Writes blocked items to `.claude/blocked.md` in a machine-readable format
-5. **Integration**: Updates `claude.md` to instruct Claude Code to process blocks at runtime
+### 1. Discovery Phase
+
+**MCP Servers**: Scans current directory up to home directory for `.claude.json` files
+
+**Memory Files**: Searches `.claude/memories/` in:
+- Project directory (local scope)
+- User home directory (inherited scope)
+
+**Agents**: Searches `.claude/agents/` in:
+- Project directory (project-local agents)
+- User home directory (user-global agents)
+- Detects when project agents override user agents
+
+### 2. Display Phase
+
+Shows all discovered context sources with:
+- **Source indicators**: Local, Inherited, Project [P], User [U], Override [O]
+- **Status markers**: ✓ (active) or ✗ (blocked)
+- **Metadata**: Names, descriptions, hierarchy information
+
+### 3. Toggle Phase
+
+Block/unblock any item with Space key. Blocking works via Claude Code's native `permissions.deny` mechanism:
+
+```json
+{
+  "permissions": {
+    "deny": [
+      { "type": "memory", "pattern": "sensitive-notes.md" },
+      { "type": "agent", "pattern": "experimental-agent.md" }
+    ]
+  }
+}
+```
+
+### 4. Persistence Phase
+
+Saves changes to `.claude/settings.json` using atomic write pattern with automatic rollback on failure.
+
+### 5. Integration Phase
+
+Claude Code automatically respects `permissions.deny` entries - no additional configuration needed!
 
 ### File Structure
 
@@ -78,33 +158,32 @@ After running `mcp-toggle` and saving changes, you'll see:
 ```
 project/
 ├── .claude/
-│   └── blocked.md          # Machine-readable block list
-└── claude.md               # Human instructions + integration block
+│   ├── settings.json       # Context blocking configuration
+│   ├── agents/            # Project-local agents
+│   │   ├── rapid-prototyper.md
+│   │   └── custom-agent.md
+│   └── memories/          # Project-local memory files
+│       ├── project-notes.md
+│       └── archive/old-docs.md
+└── claude.md              # Human instructions (optional)
 ```
 
-**blocked.md format**:
-```markdown
-# Blocked MCP Servers and Memory Files
-# Last updated: 2025-01-10T12:00:00.000Z
-
-## MCP Servers
-mcp:filesystem
-mcp:sequential-thinking
-
-## Memory Files
-memory:old-notes.md
-memory:archive/deprecated.md
+**settings.json format** (v0.4.0):
+```json
+{
+  "permissions": {
+    "deny": [
+      { "type": "memory", "pattern": "temporary-notes.md" },
+      { "type": "memory", "pattern": "archive/old-docs.md" },
+      { "type": "agent", "pattern": "experimental-agent.md" }
+    ]
+  }
+}
 ```
 
-**claude.md integration** (auto-appended):
-```markdown
-<!-- MCP Toggle Integration - DO NOT EDIT THIS SECTION -->
-# MCP Server and Memory Control
+### Migration from v0.3.0
 
-This project uses `blocked.md` to control which MCP servers and memory files are loaded.
-...
-<!-- End MCP Toggle Integration -->
-```
+If upgrading from v0.3.0, old `.blocked` files will be automatically migrated to the new `permissions.deny` mechanism. See [Migration Guide](docs/migration-v0.4.0.md) for details.
 
 ## Requirements
 
@@ -143,6 +222,62 @@ npm run format
 
 MIT
 
+## Usage Examples
+
+### Blocking Sensitive Memory Files
+
+```bash
+# Launch TUI
+mcp-toggle
+
+# Navigate to Memory Files panel (press Tab)
+# Use ↓ to select "sensitive-notes.md"
+# Press Space to block
+# Press Enter to save
+```
+
+Result in `.claude/settings.json`:
+```json
+{
+  "permissions": {
+    "deny": [
+      { "type": "memory", "pattern": "sensitive-notes.md" }
+    ]
+  }
+}
+```
+
+### Managing Agents Per Project
+
+```bash
+# Launch TUI in your project
+cd ~/my-project
+mcp-toggle
+
+# Navigate to Agents panel (press Tab twice)
+# See project and user agents:
+# [P] ✓ rapid-prototyper    (project agent)
+# [U] ✓ test-writer         (user agent)
+# [U] ✓ security-scanner    (user agent)
+
+# Block security-scanner for this project
+# Select it with ↓, press Space, then Enter
+```
+
+Result: Security scanner blocked for this project only, but remains available in other projects.
+
+### Viewing Context Overview
+
+```bash
+mcp-toggle
+
+# View summary at top:
+# MCP Servers: 4 active, 1 blocked
+# Memory Files: 8 loaded, 2 blocked
+# Agents: 12 available (7 project, 5 user)
+# Est. Context: ~45KB
+```
+
 ## Troubleshooting
 
 ### Permission Denied Errors
@@ -151,22 +286,39 @@ If you see `EACCES` errors:
 
 ```bash
 chmod u+w .claude/
+chmod u+w .claude/settings.json  # if exists
 ```
 
 ### Changes Not Persisting
 
-Verify that `blocked.md` was created:
+Verify that `settings.json` was updated:
 
 ```bash
-ls -la .claude/blocked.md
+cat .claude/settings.json | jq .permissions.deny
 ```
 
 ### Claude Code Not Respecting Blocks
 
-Ensure `claude.md` has the integration block. If missing, run:
+Ensure `settings.json` exists and has valid JSON:
 
 ```bash
-mcp-toggle  # Make any change and save
+# Validate JSON
+cat .claude/settings.json | jq .
+
+# If invalid, use mcp-toggle to recreate
+mcp-toggle  # It will create valid settings.json
+```
+
+### Migration Issues
+
+If automatic migration from v0.3.0 didn't work:
+
+```bash
+# Force migration
+mcp-toggle --migrate
+
+# Or see migration guide
+cat docs/migration-v0.4.0.md
 ```
 
 ## Contributing
@@ -175,7 +327,13 @@ Contributions welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) before sub
 
 ## Documentation
 
-For complete documentation, see [`specs/001-mcp-toggle-a/`](specs/001-mcp-toggle-a/):
-- [Quickstart Guide](specs/001-mcp-toggle-a/quickstart.md)
-- [Feature Specification](specs/001-mcp-toggle-a/spec.md)
-- [Implementation Plan](specs/001-mcp-toggle-a/plan.md)
+### User Guides
+- **[Migration Guide (v0.4.0)](docs/migration-v0.4.0.md)** - Upgrading from v0.3.0
+- **[API Documentation](docs/api.md)** - Programmatic usage reference
+- **[Developer Guide](docs/developer-guide.md)** - Contributing and architecture
+
+### Feature Specifications
+- [Initial Spec](specs/001-mcp-toggle-a/) - Original MCP server blocking
+- [Redesign](specs/002-redesign-mcp-toggle/) - Architecture improvements
+- [Migration Support](specs/003-add-migrate-to/) - Migration tooling
+- [Context Management](specs/004-comprehensive-context-management/) - Current feature set
