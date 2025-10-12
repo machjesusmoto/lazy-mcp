@@ -333,7 +333,7 @@ Contributions welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) before sub
 - **[Developer Guide](docs/developer-guide.md)** - Contributing and architecture
 
 ### Feature Specifications
-- [Initial Spec](specs/001-mcp-toggle-a/) - Original MCP server blocking
-- [Redesign](specs/002-redesign-mcp-toggle/) - Architecture improvements
-- [Migration Support](specs/003-add-migrate-to/) - Migration tooling
-- [Context Management](specs/004-comprehensive-context-management/) - Current feature set
+- [Initial Spec](docs/specs/001-mcp-toggle-a/) - Original MCP server blocking
+- [Redesign](docs/specs/002-redesign-mcp-toggle/) - Architecture improvements
+- [Migration Support](docs/specs/003-add-migrate-to/) - Migration tooling
+- [Context Management](docs/specs/004-comprehensive-context-management/) - Current feature set

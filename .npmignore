@@ -30,7 +30,9 @@ jest.config.js
 
 # Documentation (except README, CHANGELOG, LICENSE)
 CONTRIBUTING.md
-docs/
+# Allow public docs, exclude internal development docs
+docs/development/
+docs/publishing/
 
 # Test coverage
 coverage/

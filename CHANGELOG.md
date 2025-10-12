@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.2] - 2025-10-12
+
+### Fixed
+
+- **Documentation Links** - Fixed broken feature specification links on npm and GitHub
+  - Feature specification links now correctly point to `docs/specs/` directory
+  - Reorganized documentation: public docs in `/docs`, internal docs in `/docs/development`
+  - Updated `.gitignore` to exclude internal development documentation from npm package
+
+### Changed
+
+- **Documentation Organization** - Improved documentation structure
+  - Moved internal development docs to `docs/development/` (gitignored for npm)
+  - Added feature specifications to `docs/specs/` for public access
+  - Maintained clean separation between public and internal documentation
+
 ## [0.5.1] - 2025-10-12
 
 ### Fixed

@@ -44,7 +44,8 @@ yarn-error.log*
 .claude/
 .specify/
 specs/
-# Allow organized docs structure
+# Allow public docs, but exclude internal development docs
 !docs/
 !docs/**
+docs/development/
 setup-github.sh
