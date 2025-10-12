@@ -44,9 +44,7 @@ yarn-error.log*
 .claude/
 .specify/
 specs/
-docs/
-!docs/MEMORY_SYSTEMS.md
-GITHUB_SETUP.md
-NPM_PUBLISH.md
-RELEASE_CHECKLIST.md
+# Allow organized docs structure
+!docs/
+!docs/**
 setup-github.sh
