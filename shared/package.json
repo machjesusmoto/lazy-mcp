@@ -20,6 +20,10 @@
   ],
   "author": "Lazy MCP Contributors",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/machjesusmoto/lazy-mcp.git"
+  },
   "dependencies": {
     "commander": "^12.1.0",
     "fast-glob": "^3.3.2",
