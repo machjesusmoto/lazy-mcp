@@ -37,16 +37,24 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Check dist/ directory exists
+      - name: Verify plugin build
         run: |
-          if [ ! -d "dist" ]; then
-            echo "Error: dist/ directory not created by build"
+          if [ ! -d "plugin/dist" ]; then
+            echo "Error: plugin/dist/ directory not created by build"
             exit 1
           fi
 
-      - name: Verify bin script exists
+      - name: Verify CLI bin script
+        working-directory: ./cli
         run: |
-          if [ ! -f "bin/mcp-toggle" ]; then
-            echo "Error: bin/mcp-toggle script not found"
+          if [ ! -f "bin/lazy-mcp" ]; then
+            echo "Error: bin/lazy-mcp script not found"
+            exit 1
+          fi
+
+      - name: Verify shared build
+        run: |
+          if [ ! -d "shared/dist" ]; then
+            echo "Error: shared/dist/ directory not created by build"
             exit 1
           fi

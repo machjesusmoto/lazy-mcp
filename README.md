@@ -40,7 +40,7 @@ Lazy MCP uses a **registry + lazy loading** approach:
 
 ```bash
 # Install the plugin package
-npm install -g lazy-mcp
+npm install -g @lazy-mcp/plugin
 
 # The plugin will be automatically detected by Claude Code
 # Commands will be available as /lazy:* in your sessions

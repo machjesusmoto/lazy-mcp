@@ -5,7 +5,7 @@ This document outlines the steps to publish the lazy-mcp packages to NPM.
 ## Overview
 
 The lazy-mcp monorepo contains 3 publishable packages:
-1. **lazy-mcp** (plugin) - Main Claude Code plugin
+1. **@lazy-mcp/plugin** - Main Claude Code plugin
 2. **@lazy-mcp/shared** - Shared library used by plugin and CLI
 3. **@lazy-mcp/cli** - Command-line tool
 
@@ -23,7 +23,7 @@ The lazy-mcp monorepo contains 3 publishable packages:
 
 1. **@lazy-mcp/shared** (no dependencies on other workspace packages)
 2. **@lazy-mcp/cli** (depends on @lazy-mcp/shared)
-3. **lazy-mcp** (depends on @lazy-mcp/shared)
+3. **@lazy-mcp/plugin** (depends on @lazy-mcp/shared)
 
 ## Step-by-Step Publishing
 
@@ -81,7 +81,7 @@ npm publish --access public --otp <your-otp-code>
 cd ..
 ```
 
-### 6. Publish lazy-mcp (plugin)
+### 6. Publish @lazy-mcp/plugin
 
 ```bash
 cd plugin
@@ -100,12 +100,12 @@ git push --tags
 
 ```bash
 # Check that packages are published
-npm view lazy-mcp
+npm view @lazy-mcp/plugin
 npm view @lazy-mcp/shared
 npm view @lazy-mcp/cli
 
 # Verify installation works
-npx -y lazy-mcp --version
+npm install -g @lazy-mcp/plugin
 ```
 
 ## Troubleshooting
@@ -140,7 +140,7 @@ If CLI or plugin can't find @lazy-mcp/shared after publishing:
 ## Post-Publishing Checklist
 
 - [ ] Verify all 3 packages appear on NPM
-- [ ] Test installation: `npm install -g lazy-mcp`
+- [ ] Test installation: `npm install -g @lazy-mcp/plugin`
 - [ ] Test CLI: `lazy-mcp --version`
 - [ ] Update GitHub release notes
 - [ ] Update README with new installation instructions
