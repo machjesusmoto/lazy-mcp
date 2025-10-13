@@ -56,8 +56,27 @@ specs/
 !docs/
 !docs/**
 docs/development/
+docs/specs/
 setup-github.sh
+
+# Status and Progress Documents (development only)
+PROJECT_STATUS.md
+PHASE_*.md
+NEXT_STEPS.md
+HUMAN_TASKS_SUMMARY.md
+*_COMPLETION*.md
+*_SUCCESS.md
+PUBLISH_COMPLETE.md
+READY_TO_PUBLISH.md
+RENAME_SUMMARY.md
+PLUGIN_RENAME.md
+NPM_PUBLISHING.md
+GITHUB_ACTIONS_SETUP.md
+COMMAND_DEPLOYMENT_GUIDE.md
+TEST_COMMANDS.md
+PLUGIN_INSTALLATION.md
 
 # Monorepo-specific
 .task-plan.md
 package.json.backup-cli
+test-tui.sh

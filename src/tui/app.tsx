@@ -13,9 +13,11 @@ import { updateClaudeMd } from '../core/claude-md-updater';
 import { computeStats } from '../models/project-context';
 import { ItemList } from './components/item-list';
 import { DetailsPane } from './components/details-pane';
+import { MigrationMenu } from './components/migration-menu';
 import type { ProjectContext, MCPServer, MemoryFile, SubAgent } from '../models';
 import type { UnifiedItem } from '../models/unified-item';
 import { createUnifiedItemList } from '../models/unified-item';
+import { useMigration } from './hooks/use-migration';
 import * as path from 'path';
 
 export interface AppProps {
@@ -23,6 +25,7 @@ export interface AppProps {
   noClaudeMdUpdate?: boolean;
 }
 
+type ViewMode = 'main' | 'menu' | 'migration';
 type FocusPane = 'list' | 'details';
 
 /**
@@ -52,11 +55,16 @@ export const App: React.FC<AppProps> = ({ projectDir = process.cwd(), noClaudeMd
   const [items, setItems] = useState<UnifiedItem[]>([]);
 
   // UI state
+  const [viewMode, setViewMode] = useState<ViewMode>('main');
   const [focusPane, setFocusPane] = useState<FocusPane>('list');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [detailsScrollOffset, setDetailsScrollOffset] = useState(0);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [selectedConflictIndex, setSelectedConflictIndex] = useState(0);
+
+  // Migration hook
+  const migration = useMigration();
 
   // Load project context on mount
   useEffect(() => {
@@ -88,9 +96,30 @@ export const App: React.FC<AppProps> = ({ projectDir = process.cwd(), noClaudeMd
   useInput((input: string, key) => {
     if (isLoading || loadError) return;
 
-    // Quit on 'q' or Ctrl+C
-    if (input === 'q' || (key.ctrl && input === 'c')) {
+    // Quit on 'q' or Ctrl+C (only in main view)
+    if ((input === 'q' || (key.ctrl && input === 'c')) && viewMode === 'main') {
       exit();
+      return;
+    }
+
+    // Handle migration view
+    if (viewMode === 'migration' && migration.operation) {
+      handleMigrationInput(input, key);
+      return;
+    }
+
+    // Main view input handling
+    if (viewMode !== 'main') return;
+
+    // 'm' to open migration menu (if project-local servers exist)
+    if (input === 'm') {
+      const projectLocalServers = servers.filter(s => s.hierarchyLevel === 1);
+      if (projectLocalServers.length > 0) {
+        startMigrationFlow(projectLocalServers);
+      } else {
+        setSaveMessage('ℹ No project-local servers to migrate');
+        setTimeout(() => setSaveMessage(null), 2000);
+      }
       return;
     }
 
@@ -167,6 +196,91 @@ export const App: React.FC<AppProps> = ({ projectDir = process.cwd(), noClaudeMd
       return;
     }
   });
+
+  const startMigrationFlow = async (projectLocalServers: MCPServer[]) => {
+    setViewMode('migration');
+    try {
+      await migration.startMigration(projectDir, projectLocalServers);
+    } catch (error) {
+      setSaveMessage(`✗ Migration failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setTimeout(() => setSaveMessage(null), 3000);
+      setViewMode('main');
+    }
+  };
+
+  const handleMigrationInput = async (input: string, key: any) => {
+    if (!migration.operation) return;
+
+    const { state } = migration.operation;
+
+    // Handle conflict resolution state
+    if (state === 'conflict_resolution') {
+      if (key.upArrow) {
+        setSelectedConflictIndex(prev => Math.max(0, prev - 1));
+        return;
+      }
+      if (key.downArrow) {
+        setSelectedConflictIndex(prev => Math.min(migration.operation!.conflicts.length - 1, prev + 1));
+        return;
+      }
+
+      // Change resolution: s(kip), o(verwrite), r(ename)
+      if (input === 's') {
+        const conflict = migration.operation.conflicts[selectedConflictIndex];
+        migration.updateResolution(conflict.serverName, { ...conflict, resolution: 'skip' });
+        return;
+      }
+      if (input === 'o') {
+        const conflict = migration.operation.conflicts[selectedConflictIndex];
+        migration.updateResolution(conflict.serverName, { ...conflict, resolution: 'overwrite' });
+        return;
+      }
+      // Note: rename would need a text input sub-modal - skip for MVP
+
+      // Enter to proceed to ready state
+      if (key.return) {
+        const allResolved = migration.operation.conflicts.every(c => c.resolution !== undefined);
+        if (allResolved) {
+          migration.updateResolution('', migration.operation.conflicts[0]); // trigger state update
+        }
+        return;
+      }
+    }
+
+    // Handle ready state
+    if (state === 'ready') {
+      if (key.return) {
+        await migration.confirmMigration();
+        return;
+      }
+      if (key.escape) {
+        migration.cancelMigration();
+        setViewMode('main');
+        return;
+      }
+    }
+
+    // Handle complete or error state
+    if (state === 'complete' || state === 'error') {
+      // Any key to close
+      migration.resetMigration();
+      setViewMode('main');
+      // Reload context to reflect migrated servers
+      const ctx = await buildProjectContext(projectDir);
+      setContext(ctx);
+      setServers(ctx.mcpServers);
+      const unifiedItems = createUnifiedItemList(ctx.mcpServers, ctx.memoryFiles, ctx.agents);
+      setItems(unifiedItems);
+      return;
+    }
+
+    // Escape to cancel at any time
+    if (key.escape) {
+      migration.cancelMigration();
+      setViewMode('main');
+      return;
+    }
+  };
 
   const handleSave = async () => {
     if (!context) return;
@@ -304,6 +418,26 @@ export const App: React.FC<AppProps> = ({ projectDir = process.cwd(), noClaudeMd
           scrollOffset={detailsScrollOffset}
         />
       </Box>
+
+      {/* Migration menu overlay */}
+      {viewMode === 'migration' && migration.operation && (
+        <Box
+          position="absolute"
+          width={terminalWidth}
+          height={terminalHeight}
+          justifyContent="center"
+          alignItems="center"
+        >
+          <MigrationMenu
+            operation={migration.operation}
+            selectedConflictIndex={selectedConflictIndex}
+            onClose={() => {
+              migration.cancelMigration();
+              setViewMode('main');
+            }}
+          />
+        </Box>
+      )}
 
       {/* Save message overlay */}
       {saveMessage && (
