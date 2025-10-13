@@ -15,6 +15,7 @@
     "sourceMap": true,
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
+    "composite": true,
     "types": ["node", "jest"]
   },
   "include": ["src/**/*"],
