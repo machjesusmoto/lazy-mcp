@@ -74,8 +74,12 @@ After publishing, verify:
 - [ ] Check for green "provenance" badge (from GitHub Actions)
 - [ ] Visit https://www.npmjs.com/package/@lazy-mcp/shared
 - [ ] Visit https://www.npmjs.com/package/@lazy-mcp/cli
-- [ ] Test installation: `npm install -g @lazy-mcp/plugin`
+- [ ] Test CLI installation: `npm install -g @lazy-mcp/cli`
 - [ ] Check CLI works: `lazy-mcp --version`
+- [ ] Test plugin installation: `npm install -g @lazy-mcp/plugin`
+- [ ] Plugin should be auto-detected by Claude Code
+
+**Note**: The CLI package (`@lazy-mcp/cli`) provides the `lazy-mcp` command. The plugin package (`@lazy-mcp/plugin`) is for Claude Code integration and doesn't provide a CLI command.
 
 ## What Happens During Automated Publish
 
