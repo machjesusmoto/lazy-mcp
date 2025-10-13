@@ -9,12 +9,20 @@ dist/
 *.tsbuildinfo
 # TypeScript declaration files generated during build/test
 tests/**/*.d.ts
+# Workspace-specific build outputs
+plugin/dist/
+cli/dist/
+shared/dist/
 
 # Testing
 coverage/
 .nyc_output/
 *.test.js
 *.test.d.ts
+# Workspace-specific coverage
+plugin/coverage/
+cli/coverage/
+shared/coverage/
 
 # Logs
 logs/
@@ -49,3 +57,7 @@ specs/
 !docs/**
 docs/development/
 setup-github.sh
+
+# Monorepo-specific
+.task-plan.md
+package.json.backup-cli

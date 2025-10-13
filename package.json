@@ -1,72 +1,51 @@
 {
-  "name": "mcp-toggle",
-  "version": "0.5.2",
-  "description": "CLI tool to manage Claude Code MCP servers and memory files",
-  "main": "dist/cli.js",
-  "bin": {
-    "mcp-toggle": "bin/mcp-toggle"
-  },
+  "name": "lazy-mcp-monorepo",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Monorepo for lazy-mcp: Claude Code plugin for lazy-loading MCP tools",
+  "workspaces": [
+    "plugin",
+    "cli",
+    "shared"
+  ],
   "scripts": {
-    "build": "tsc",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "lint": "eslint src tests --ext .ts,.tsx",
-    "format": "prettier --write \"src/**/*.{ts,tsx}\" \"tests/**/*.{ts,tsx}\"",
-    "prepublishOnly": "npm run build"
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "test:watch": "npm run test:watch --workspaces --if-present",
+    "test:coverage": "npm run test:coverage --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "format": "npm run format --workspaces --if-present",
+    "clean": "npm run clean --workspaces --if-present && rm -rf node_modules",
+    "clean:dist": "find . -type d -name 'dist' -not -path '*/node_modules/*' -exec rm -rf {} + 2>/dev/null || true",
+    "version:check": "echo '\nRoot:' && npm pkg get version && echo '\nPlugin:' && npm pkg get version -w plugin && echo '\nShared:' && npm pkg get version -w shared && echo '\nCLI:' && npm pkg get version -w cli && echo ''"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/machjesusmoto/lazy-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/machjesusmoto/lazy-mcp/issues"
+  },
+  "homepage": "https://github.com/machjesusmoto/lazy-mcp#readme",
   "keywords": [
     "claude-code",
     "mcp",
+    "plugin",
     "cli",
-    "tui",
-    "configuration",
-    "developer-tools"
+    "monorepo"
   ],
-  "author": "MCP Toggle Contributors",
+  "author": "Lazy MCP Contributors",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/machjesusmoto/mcp-toggle.git"
-  },
-  "bugs": {
-    "url": "https://github.com/machjesusmoto/mcp-toggle/issues"
-  },
-  "homepage": "https://github.com/machjesusmoto/mcp-toggle#readme",
-  "files": [
-    "dist",
-    "bin",
-    "README.md",
-    "LICENSE",
-    "CHANGELOG.md",
-    "docs/*.md",
-    "docs/specs",
-    "docs/releases"
-  ],
   "engines": {
     "node": ">=18.0.0"
   },
-  "dependencies": {
-    "commander": "^12.1.0",
-    "fast-glob": "^3.3.2",
-    "fs-extra": "^11.2.0",
-    "ink": "^3.2.0",
-    "js-yaml": "^4.1.0",
-    "react": "^17.0.2"
-  },
   "devDependencies": {
-    "@types/fs-extra": "^11.0.4",
-    "@types/jest": "^30.0.0",
-    "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.14.0",
-    "@types/react": "^17.0.89",
     "@typescript-eslint/eslint-plugin": "^7.13.1",
     "@typescript-eslint/parser": "^7.13.1",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
-    "jest": "^29.7.0",
     "prettier": "^3.3.2",
-    "ts-jest": "^29.2.0",
     "typescript": "^5.5.2"
   }
 }

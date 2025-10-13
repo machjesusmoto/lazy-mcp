@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "node",
+      "args": ["/usr/local/lib/node_modules/@modelcontextprotocol/server-filesystem/dist/index.js"],
+      "env": {
+        "ROOT_DIR": "/home/user/projects"
+      }
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    }
+  }
+}

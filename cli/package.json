@@ -1,0 +1,62 @@
+{
+  "name": "@lazy-mcp/cli",
+  "version": "0.5.3",
+  "description": "CLI tool for lazy-loading MCP tools in Claude Code",
+  "main": "dist/cli.js",
+  "bin": {
+    "lazy-mcp": "bin/lazy-mcp"
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src tests --ext .ts,.tsx",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\" \"tests/**/*.{ts,tsx}\"",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "claude-code",
+    "mcp",
+    "cli",
+    "tui",
+    "configuration",
+    "developer-tools"
+  ],
+  "author": "Lazy MCP Contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/machjesusmoto/lazy-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/machjesusmoto/lazy-mcp/issues"
+  },
+  "homepage": "https://github.com/machjesusmoto/lazy-mcp#readme",
+  "files": [
+    "dist",
+    "bin",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@lazy-mcp/shared": "file:../shared",
+    "ink": "^3.2.0",
+    "js-yaml": "^4.1.0",
+    "react": "^17.0.2"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.14.0",
+    "@types/react": "^17.0.89",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.0",
+    "typescript": "^5.5.2"
+  }
+}

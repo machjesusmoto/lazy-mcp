@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-context7"]
+    },
+    "playwright": {
+      "command": "node",
+      "args": ["/opt/mcp-servers/playwright/index.js"]
+    }
+  }
+}

@@ -15,7 +15,6 @@
     "declarationMap": true,
     "sourceMap": true,
     "moduleResolution": "node",
-    "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "types": ["node", "jest"]
   },
