@@ -41,6 +41,55 @@ export const MigrationMenu: React.FC<MigrationMenuProps> = ({
         </Text>
       </Box>
 
+      {state === 'idle' && (
+        <Box flexDirection="column">
+          <Box marginBottom={1}>
+            <Text color="yellow">⚠️  Project-Level MCP Servers Detected</Text>
+          </Box>
+
+          <Box flexDirection="column" marginY={1}>
+            <Text>
+              This project has {selectedServers.length} MCP server(s) configured locally:
+            </Text>
+            {selectedServers.map(name => (
+              <Box key={name} marginLeft={2}>
+                <Text>• {name}</Text>
+              </Box>
+            ))}
+          </Box>
+
+          <Box flexDirection="column" marginY={1} paddingY={1} borderStyle="single" borderColor="yellow">
+            <Box marginX={1}>
+              <Text bold color="red">⚠️  WARNING:</Text>
+            </Box>
+            <Box marginX={1}>
+              <Text>
+                Toggling off project-level servers WITHOUT migrating them to global
+              </Text>
+            </Box>
+            <Box marginX={1}>
+              <Text>
+                will DELETE them permanently from this project!
+              </Text>
+            </Box>
+          </Box>
+
+          <Box flexDirection="column" marginTop={1}>
+            <Text bold>Choose an action:</Text>
+            <Box marginLeft={2} marginTop={1}>
+              <Text>
+                <Text bold color="green">M</Text> - Migrate all project servers to global configuration
+              </Text>
+            </Box>
+            <Box marginLeft={2}>
+              <Text>
+                <Text bold color="blue">ESC</Text> - Keep project servers local (continue to toggle view)
+              </Text>
+            </Box>
+          </Box>
+        </Box>
+      )}
+
       {state === 'validating' && (
         <Box flexDirection="column">
           <Text>Validating migration...</Text>

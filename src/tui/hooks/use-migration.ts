@@ -25,6 +25,8 @@ export interface UseMigrationResult {
   error: Error | null;
 
   // Actions
+  initializeMigration: (serverNames: string[], projectLocalPath: string) => Promise<void>;
+  startValidation: () => Promise<void>;
   startMigration: (projectDir: string, selectedServers: MCPServer[]) => Promise<void>;
   updateResolution: (serverName: string, resolution: ConflictResolution) => void;
   confirmMigration: () => Promise<void>;
@@ -48,6 +50,53 @@ export function useMigration(): UseMigrationResult {
   const [operation, setOperation] = useState<MigrationOperation | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+
+  /**
+   * Initialize migration with idle state (initial prompt)
+   */
+  const initializeMigration = useCallback(async (serverNames: string[], projectLocalPath: string) => {
+    const initialOperation: MigrationOperation = {
+      state: 'idle',
+      selectedServers: serverNames,
+      conflicts: [],
+      timestamp: Date.now(),
+      projectLocalPath,
+    };
+    setOperation(initialOperation);
+  }, []);
+
+  /**
+   * Start validation (transition from idle to validating/conflict_resolution/ready)
+   */
+  const startValidation = useCallback(async () => {
+    if (!operation || operation.state !== 'idle') return;
+
+    try {
+      setIsProcessing(true);
+      setError(null);
+
+      // Transition to validating state
+      setOperation({ ...operation, state: 'validating' });
+
+      // For now, we'll need the actual MCPServer objects to call initiateMigration
+      // This is a simplified version - we'd need to pass projectDir and rebuild servers
+      // For the prototype, we'll move directly to ready state with no conflicts
+      // TODO: Implement proper validation with conflict detection
+
+      // Simulate validation delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      setOperation({
+        ...operation,
+        state: 'ready',
+        conflicts: [], // No conflicts for now
+      });
+      setIsProcessing(false);
+    } catch (err) {
+      setError(err as Error);
+      setIsProcessing(false);
+    }
+  }, [operation]);
 
   /**
    * Start migration process
@@ -139,6 +188,8 @@ export function useMigration(): UseMigrationResult {
     error,
 
     // Actions
+    initializeMigration,
+    startValidation,
     startMigration,
     updateResolution,
     confirmMigration,

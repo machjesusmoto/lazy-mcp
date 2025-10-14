@@ -81,6 +81,17 @@ export const App: React.FC<AppProps> = ({ projectDir = process.cwd(), noClaudeMd
         const unifiedItems = createUnifiedItemList(ctx.mcpServers, ctx.memoryFiles, ctx.agents);
         setItems(unifiedItems);
 
+        // Auto-show migration prompt if project-local servers exist
+        const projectLocalServers = ctx.mcpServers.filter(s => s.hierarchyLevel === 1);
+        if (projectLocalServers.length > 0) {
+          // Initialize migration with all project-local servers
+          await migration.initializeMigration(
+            projectLocalServers.map(s => s.name),
+            path.join(projectDir, '.mcp.json')
+          );
+          setViewMode('migration');
+        }
+
         setIsLoading(false);
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error';
@@ -212,6 +223,22 @@ export const App: React.FC<AppProps> = ({ projectDir = process.cwd(), noClaudeMd
     if (!migration.operation) return;
 
     const { state } = migration.operation;
+
+    // Handle idle state (initial prompt)
+    if (state === 'idle') {
+      if (input === 'm' || input === 'M') {
+        // User chose to migrate - proceed to validation
+        migration.startValidation();
+        return;
+      }
+      if (key.escape) {
+        // User chose to keep project servers local
+        migration.cancelMigration();
+        setViewMode('main');
+        return;
+      }
+      return;
+    }
 
     // Handle conflict resolution state
     if (state === 'conflict_resolution') {
