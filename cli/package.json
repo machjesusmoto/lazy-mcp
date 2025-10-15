@@ -1,6 +1,6 @@
 {
   "name": "@lazy-mcp/cli",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "description": "CLI tool for lazy-loading MCP tools in Claude Code",
   "main": "dist/cli.js",
   "bin": {
