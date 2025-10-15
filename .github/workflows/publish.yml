@@ -37,19 +37,43 @@ jobs:
 
       - name: Publish @lazy-mcp/shared
         working-directory: ./shared
-        run: npm publish --access public --provenance
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          PACKAGE_NAME=$(node -p "require('./package.json').name")
+          if npm view ${PACKAGE_NAME}@${PACKAGE_VERSION} version 2>/dev/null; then
+            echo "⏭️  ${PACKAGE_NAME}@${PACKAGE_VERSION} already published, skipping"
+          else
+            echo "📦 Publishing ${PACKAGE_NAME}@${PACKAGE_VERSION}"
+            npm publish --access public --provenance
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @lazy-mcp/cli
         working-directory: ./cli
-        run: npm publish --access public --provenance
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          PACKAGE_NAME=$(node -p "require('./package.json').name")
+          if npm view ${PACKAGE_NAME}@${PACKAGE_VERSION} version 2>/dev/null; then
+            echo "⏭️  ${PACKAGE_NAME}@${PACKAGE_VERSION} already published, skipping"
+          else
+            echo "📦 Publishing ${PACKAGE_NAME}@${PACKAGE_VERSION}"
+            npm publish --access public --provenance
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @lazy-mcp/plugin
         working-directory: ./plugin
-        run: npm publish --access public --provenance
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          PACKAGE_NAME=$(node -p "require('./package.json').name")
+          if npm view ${PACKAGE_NAME}@${PACKAGE_VERSION} version 2>/dev/null; then
+            echo "⏭️  ${PACKAGE_NAME}@${PACKAGE_VERSION} already published, skipping"
+          else
+            echo "📦 Publishing ${PACKAGE_NAME}@${PACKAGE_VERSION}"
+            npm publish --access public --provenance
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
