@@ -41,6 +41,55 @@ export const MigrationMenu: React.FC<MigrationMenuProps> = ({
         </Text>
       </Box>
 
+      {state === 'idle' && (
+        <Box flexDirection="column">
+          <Box marginBottom={1}>
+            <Text color="yellow">⚠️  Project-Level MCP Servers Detected </Text>
+          </Box>
+
+          <Box flexDirection="column" marginY={1}>
+            <Text>
+              This project has {selectedServers.length} MCP server(s) configured locally:
+            </Text>
+            {selectedServers.map(name => (
+              <Box key={name} marginLeft={2}>
+                <Text>• {name}</Text>
+              </Box>
+            ))}
+          </Box>
+
+          <Box flexDirection="column" marginY={1} paddingY={1} borderStyle="single" borderColor="yellow">
+            <Box marginX={1}>
+              <Text bold color="red">⚠️  WARNING: </Text>
+            </Box>
+            <Box marginX={1}>
+              <Text>
+                Toggling off project-level servers WITHOUT migrating them to global
+              </Text>
+            </Box>
+            <Box marginX={1}>
+              <Text>
+                will DELETE them permanently from this project!
+              </Text>
+            </Box>
+          </Box>
+
+          <Box flexDirection="column" marginTop={1}>
+            <Text bold>Choose an action:</Text>
+            <Box marginLeft={2} marginTop={1}>
+              <Text>
+                <Text bold color="green">M</Text> - Migrate all project servers to global configuration
+              </Text>
+            </Box>
+            <Box marginLeft={2}>
+              <Text>
+                <Text bold color="blue">ESC</Text> - Keep project servers local (continue to toggle view)
+              </Text>
+            </Box>
+          </Box>
+        </Box>
+      )}
+
       {state === 'validating' && (
         <Box flexDirection="column">
           <Text>Validating migration...</Text>
@@ -69,7 +118,7 @@ export const MigrationMenu: React.FC<MigrationMenuProps> = ({
 
           <Box marginTop={1}>
             <Text dimColor>
-              Navigate: ↑/↓ | Change resolution: s(kip) / o(verwrite) / r(ename) | Continue: Enter
+              Navigate: ↑/↓ | Change resolution: s(kip) / o(verwrite) | Continue: Enter
             </Text>
           </Box>
         </Box>
@@ -80,23 +129,35 @@ export const MigrationMenu: React.FC<MigrationMenuProps> = ({
           <Text color="green">✓ Ready to migrate</Text>
           <Box marginY={1}>
             <Text>
-              Will migrate {selectedServers.length} server(s) to global config
+              Will migrate {selectedServers.filter((server) => {
+                const serverName = typeof server === 'string' ? server : server.name;
+                const conflict = conflicts.find(c => c.serverName === serverName);
+                return !conflict || conflict.resolution !== 'skip';
+              }).length} server(s) to global config:
             </Text>
           </Box>
 
-          {conflicts.length > 0 && (
-            <Box flexDirection="column" marginY={1}>
-              <Text dimColor>Resolutions:</Text>
-              {conflicts.map((conflict) => (
-                <Box key={conflict.serverName} marginLeft={2}>
-                  <Text>
-                    {conflict.serverName}: {conflict.resolution}
-                    {conflict.resolution === 'rename' && conflict.newName && ` → ${conflict.newName}`}
-                  </Text>
+          <Box flexDirection="column" marginY={1}>
+            {selectedServers.map((server) => {
+              // Handle both string names (from idle init) and MCPServer objects (from startMigration)
+              const serverName = typeof server === 'string' ? server : server.name;
+              const conflict = conflicts.find(c => c.serverName === serverName);
+              return (
+                <Box key={serverName} marginLeft={2}>
+                  {conflict ? (
+                    <Text>
+                      • {serverName}: <Text color="yellow">{conflict.resolution}</Text>
+                      {conflict.resolution === 'rename' && conflict.newName && ` → ${conflict.newName}`}
+                    </Text>
+                  ) : (
+                    <Text>
+                      • {serverName}: <Text color="green">migrate</Text>
+                    </Text>
+                  )}
                 </Box>
-              ))}
-            </Box>
-          )}
+              );
+            })}
+          </Box>
 
           <Box marginTop={1}>
             <Text dimColor>Press Enter to confirm | Esc to cancel</Text>
