@@ -29,8 +29,11 @@ describe('ProjectContextBuilder', () => {
     builder = new ProjectContextBuilder();
 
     // Get mock instances
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockConfigLoader = (builder as any).configLoader;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockMemoryLoader = (builder as any).memoryLoader;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockAgentLoader = (builder as any).agentLoader;
   });
 

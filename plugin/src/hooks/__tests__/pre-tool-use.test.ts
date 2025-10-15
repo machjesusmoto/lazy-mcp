@@ -4,7 +4,7 @@
 
 import { preToolUseHook } from '../pre-tool-use';
 import * as mcpJsonUtils from '@lazy-mcp/shared';
-import type { PreToolUseInput, PreToolUseOutput } from '../pre-tool-use';
+import type { PreToolUseInput } from '../pre-tool-use';
 
 // Mock the shared library module
 jest.mock('@lazy-mcp/shared', () => ({

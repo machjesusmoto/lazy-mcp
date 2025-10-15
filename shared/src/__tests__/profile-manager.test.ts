@@ -2,7 +2,7 @@
  * Tests for ProfileManager
  */
 
-import { ProfileManager, Profile, ProfileSummary } from '../profile-manager';
+import { ProfileManager, Profile } from '../profile-manager';
 import { BlockingRule } from '../types';
 import * as fs from 'fs-extra';
 import * as path from 'path';

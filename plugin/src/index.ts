@@ -21,6 +21,7 @@ export { commands };
 
 // Plugin activation
 export function activate() {
+  // eslint-disable-next-line no-console
   console.log(`${PLUGIN_NAME} v${PLUGIN_VERSION} activated`);
   return {
     hooks,

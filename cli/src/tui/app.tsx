@@ -221,6 +221,7 @@ export const App: React.FC<AppProps> = ({ projectDir = process.cwd(), noClaudeMd
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleMigrationInput = async (input: string, key: any) => {
     if (!migration.operation) return;
 
